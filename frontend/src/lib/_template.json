@@ -1,0 +1,29 @@
+{
+    "plan": {
+        "title": "Template",
+        "name": "template",
+        "start_date": "2024-7-12",
+        "purpose": "",
+        "status": "Plan",
+        "masterplan": null
+    },
+    "reference": [],
+    "task": [
+        {
+            "id": 1,
+            "start_date_auto": "",
+            "start_date": "2024-7-12",
+            "duration": 5,
+            "type": "plan",
+            "name": "Task1",
+            "master_milestone": null,
+            "worker_id": null,
+            "memo": "",
+            "pre_id": null,
+            "level": null,
+            "progress":0
+        }
+    ],
+    "worker": [],
+    "holiday": []
+}
