@@ -1,10 +1,13 @@
 export interface IPlan {
     title: string;
     name: string;
+    rev: number;
     purpose: string;
-    start_date: string;
+    create_date: string;
+    update_date: string;
     status: string;
     masterplan: null|string;
+    ticket_url: string;
 }
 export interface IBaseListItem {
     id: number;
@@ -19,6 +22,7 @@ export interface ITask extends IBaseListItem {
     id: number;
     start_date_auto: string;
     start_date: string;
+    end_date: string;
     duration: number;
     type: string;
     name: string;
@@ -28,6 +32,9 @@ export interface ITask extends IBaseListItem {
     pre_id: number|null;
     level: number|null;
     progress:number;
+    ticket_no: string;
+    link_type: string;
+    link_id: null|number;
 }
 export interface IWorker extends IBaseListItem {
     id: number;
@@ -65,16 +72,17 @@ declare module '*.json' {
 export interface ITaskRows extends ITask {
     no: number;
     grp_id: number;
-    end_date: string,
     start_date2: Date;
-    end_date2: Date,
+    end_date2: Date;
 }
 
 export interface ITaskTable  extends ITaskRows {
     level_label: string,
     type_label: string,
     start_time_auto_label: string,
-    worker: IWorker;
+    worker: IWorker,
+    master_milestone_label: string,
+    ticket_link: null|URL
 }
 
 export interface ITaskNestedTable {

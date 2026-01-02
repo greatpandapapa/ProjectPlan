@@ -22,9 +22,11 @@ function PlanPanel() {
     const [name,  setName]  = useState<string>(plan.name);
     const [title, setTitle] = useState<string>(plan.title);
     const [purpose, setPurpose] = useState<string>(plan.purpose);
-    const [start_date, setStartDate] = useState<Dayjs>(dayjs(plan.start_date));
+    const [create_date, setCreateDate] = useState<Dayjs>(dayjs(plan.create_date));
+    const [update_date, setUpdateDate] = useState<Dayjs>(dayjs(plan.update_date));
     const [status, setStatus] = useState<string>(plan.status);
     const [masterplan,setMasterPlan] = useState<null|string>(plan.masterplan);
+    const [ticket_url,setTicketUrl] = useState<string>(plan.ticket_url);
     const [loaded,setLoaded] = useState<boolean>(false);
     const [masterList,setMasterList] = useState<(null|string)[]>([]);
 
@@ -55,12 +57,22 @@ function PlanPanel() {
 
     return (
         <Box width={800}>
-            <Grid container spacing={1} alignItems="center">
+            <Grid container spacing={2} alignItems="center">
                 <Grid size={9}>
-                    <TextField label="filename" fullWidth size="small" value={name}
+                    <TextField label="ファイル名" fullWidth size="small" value={name}
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         plan.name = event.target.value;
                         setName(plan.name);
+                      }}/>
+                </Grid>
+                <Grid size={3}>
+                    Rev:{plan.rev}
+                </Grid>
+                <Grid size={9}>
+                    <TextField label="タイトル" fullWidth size="small" value={title}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        plan.title = event.target.value;
+                        setTitle(plan.title);
                       }}/>
                 </Grid>
                 <Grid size={3}>
@@ -78,28 +90,28 @@ function PlanPanel() {
                     </FormControl>
                 </Grid>
                 <Grid size={12}>
-                    <TextField label="タイトル" fullWidth size="small" value={title}
-                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                        plan.title = event.target.value;
-                        setTitle(plan.title);
-                      }}/>
-                </Grid>
-                <Grid size={12}>
                     <TextField label="目的" multiline rows={3} fullWidth size="small" value={purpose}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         plan.purpose = event.target.value;
                         setPurpose(plan.purpose);}}/>
                 </Grid>
                 <Grid size={3}>
-                    <DatePicker label="開始日" format="YYYY/MM/DD" value={start_date}
+                    <DatePicker label="作成日" format="YYYY/MM/DD" value={create_date}
                      onChange={(newValue) => {
                         if (newValue != null) {
-                            plan.start_date = newValue.format('YYYY-MM-DD');
+                            plan.create_date = newValue.format('YYYY-MM-DD');
                         }
-                        setStartDate(dayjs(newValue))}}
+                        setCreateDate(dayjs(newValue))}}
                         />
                 </Grid>
                 <Grid size={3}>
+                    <DatePicker label="更新日" format="YYYY/MM/DD" value={update_date}
+                     onChange={(newValue) => {
+                        if (newValue != null) {
+                            plan.update_date = newValue.format('YYYY-MM-DD');
+                        }
+                        setUpdateDate(dayjs(newValue))}}
+                        />
                 </Grid>
                 <Grid size={5}>
                     <FormControl fullWidth>
@@ -109,12 +121,20 @@ function PlanPanel() {
                       value={masterplan} sx={{width:150}} size="small"
                       onChange={(event) => {
                             plan.masterplan = event.target.value;
+                            plan.resetMasterPlan();
                             plan.loadMasterPlan();
                             setMasterPlan(plan.masterplan);
                         }}>
                         {masterplan_menuItems}
                     </Select>
                     </FormControl>
+                </Grid>
+                <Grid size={12}>
+                    <TextField label="チケットURL" fullWidth size="small" value={ticket_url}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        plan.ticket_url = event.target.value;
+                        setTicketUrl(plan.ticket_url);
+                      }}/>
                 </Grid>
             </Grid>
             <ReferenceList edit={true}/>

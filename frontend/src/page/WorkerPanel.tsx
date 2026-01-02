@@ -8,7 +8,7 @@ import { plan } from '../lib/Plan';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Close';
-import {useWindowSize} from '../lib/useWindowsSize';
+import {useWindowSize} from '../component/useWindowsSize';
 import { Link } from 'react-router-dom';
 
 import {
@@ -59,7 +59,7 @@ export function WorkerGrid(props:WorkerGridProps) {
 
   // 削除ボタンの処理
   const handleDeleteClick = (id: GridRowId) => () => {
-    plan.delWorker(id as number);
+    plan.workers.delData(id as number);
     props.updateList();
   };
 
@@ -77,7 +77,7 @@ export function WorkerGrid(props:WorkerGridProps) {
   const processRowUpdate = (newRow: GridRowModel) => {
     const updatedRow = { ...newRow, isNew: false };
     
-    plan.updateWorker(newRow as object)
+    plan.workers.updateData(newRow as object)
     props.updateList();
 
     return updatedRow;
@@ -198,23 +198,23 @@ export function WorkerGrid(props:WorkerGridProps) {
  * 作業者パネル
  */
 export function WorkerPanel() {
-  const [WorkerRows,setWorkerRows] = useState<object[]>(plan.getWorkerRows());
+  const [WorkerRows,setWorkerRows] = useState<object[]>(plan.workers.getRows());
 
   // リスト更新
   const updateList = () => {
-    setWorkerRows(plan.getWorkerRows());
+    setWorkerRows(plan.workers.getRows());
   }
 
   // 作業者を追加
   const addClickHandler = () => {
-    const item = plan.getNewWorker();
-    plan.updateWorker(item);
+    const item = plan.workers.getNewData();
+    plan.workers.updateData(item);
     updateList();
   }
 
   return (
     <div>
-      <Box sx={{display: 'flex',flexDirection: 'row',m:0, p:0,marginY: "10px" }}>
+      <Box sx={{display: 'flex',flexDirection: 'row',m:0, p:0,marginY: "0px" }}>
         <Box sx={{m:0, p:0}}>
         <Button onClick={addClickHandler} fullWidth><AddIcon></AddIcon>追加</Button>
         </Box>

@@ -5,11 +5,14 @@
 
 // Composerのautoloader
 // php composer dump-autoload
-require('vendor/autoload.php');
-require('lib/bootstrap.php');
+require('../vendor/autoload.php');
+require('../lib/bootstrap.php');
+
+//アプリーケーションROOT
+$app_root=__DIR__."/..";
 
 // .env
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv = Dotenv\Dotenv::createImmutable($app_root);
 $dotenv->load();
 
 use Monolog\Logger;
@@ -20,10 +23,10 @@ use Lib\ErrorResponse;
 use Lib\Recoder;
 
 // システムルートを設定
-config::setRootPath(dirname(__FILE__));
+config::setRootPath($app_root);
 
-$log = new Logger('hexmap');
-$log->pushHandler(new StreamHandler(__DIR__.'/log/'.date("Ymd").'.log'));
+$log = new Logger('projectplan');
+$log->pushHandler(new StreamHandler($app_root.'/log/'.date("Ymd").'.log'));
 
 $controller = "Default";
 $action = "index";
@@ -32,6 +35,9 @@ if (php_sapi_name() == 'cli') {
     if (isset($argv[1]) and $argv[1] == "--") {
         $json = file_get_contents('php://stdin');
         $request = json_decode($json, true);
+        if ($request === null) {
+            echo json_last_error_msg()."(".json_last_error().")\n";
+        }
     } else {
         $request = [];
         for($i=1;$i < count($argv);$i++) {

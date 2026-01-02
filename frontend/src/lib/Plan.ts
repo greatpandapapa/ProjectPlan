@@ -16,11 +16,11 @@ import {CWorkerList,CWorker} from "./Worker";
 import {CReferenceList} from "./Reference";
 import {CHolidayList} from "./Holiday";
 import {API,ILoadDataResponse} from "../lib/Api";
+import { toDateString } from "./Common";
 // react-gantt
 import {ITask,ILink} from "@svar-ui/react-gantt"; 
 // GppGantt
 import {IGppGanttData,IGppGanttLink} from "../component/GppGanttChart";
-
 
 // 日付の曜日を日本語にするため
 dayjs.locale(ja);
@@ -31,29 +31,31 @@ dayjs.locale(ja);
 export class CPlan {
     // static
     static status_options: IValueOptions[] = [
-            {value:"Plan",label:"計画中"},
-            {value:"Done",label:"済み"},
-            {value:"Sleep",label:"保留"},
-            {value:"Rejected",label:"ボツ"},
+            {value:"plan",label:"計画中"},
+            {value:"done",label:"済み"},
+            {value:"sleep",label:"保留"},
+            {value:"rejected",label:"ボツ"},
         ];
     static type_options: IValueOptions[] = [
-            {label:"",value:"normal"}, 
-            {label:"MS",value:"milestone"},
-            {label:"休日稼働",value:"fulltime"}, 
+            {value:"normal",label:"",}, 
+            {value:"milestone",label:"MS"},
+            {value:"fulltime",label:"休日稼働"}, 
         ];
     static worker_type_options: IValueOptions[] = [
-            {label:"管理者",value:"maanger"}, 
-            {label:"リーダ",value:"leader"}, 
-            {label:"開発者",value:'developer'},
-            {label:"テスタ",value:'tester'},
-            {label:"設備",value:'equipment'}
+            {value:"maanger",label:"管理者",}, 
+            {value:"leader",label:"リーダ"}, 
+            {value:'developer',label:"開発者"},
+            {value:'tester',label:"テスタ"},
+            {value:'equipment',label:"設備",}
         ];
     static level_options: IValueOptions[] = [
-            {label:"TOP",value:0},
-            {label:"",value:99},
+            {value:0,label:"TOP",},
+            {value:1,label:"SUB"},
+            {value:99,label:""},
         ];
     static auto_options: IValueOptions[] = [
-            {value:"",label:"なし"},
+            {value:"normal",label:"通常"},
+            {value:"startend",label:"固定"},
             {value:"pre",label:"前"},
             {value:"post",label:"後"}
         ];
@@ -70,23 +72,35 @@ export class CPlan {
             {value:90,label:"90%"},
             {value:100,label:"100%"}
         ];
+    static link_type_options: IValueOptions[] = [
+            {value:"",label:""},
+            {value:"s2s",label:"s2s"},
+            {value:"s2e",label:"s2e"},
+            {value:"e2s",label:"e2s"},
+            {value:"e2e",label:"e2e"}
+        ];
 
     // プロパティ
     title: string = "";
     name: string = "";
+    rev: number = 0;
     purpose: string = "";
-    start_date: string = "";
+    create_date: string = "";
+    update_date: string = "";
     status: string = String(CPlan.status_options[0].value);
     masterplan: null|string = null;
+    ticket_url: string = "";
+
     // プライベート
-    private tasks: CTaskList = new CTaskList(this,jsondata);
-    private workers: CWorkerList = new CWorkerList(this,jsondata);
-    private references: CReferenceList = new CReferenceList(jsondata);
-    private holidaies: CHolidayList = new CHolidayList(jsondata);
+    public tasks: CTaskList = new CTaskList(this,jsondata);
+    public workers: CWorkerList = new CWorkerList(this,jsondata);
+    public references: CReferenceList = new CReferenceList(jsondata);
+    public holidaies: CHolidayList = new CHolidayList(jsondata);
     // 集計情報
     public total_fee: {[index: string]: number} = {}
     // マスタープラン
     private _masterplan: null|CPlan = null;
+    private _masterplan_options:IValueOptions[] = [];
 
     /**
      * コンストラクタ
@@ -101,17 +115,28 @@ export class CPlan {
      */
     public loadTemplateData() {
         const data = jsondata;
+        // 日付を今日の日付にする
+        data.plan.create_date = toDateString(new Date());;
+        data.task[0].start_date = toDateString(new Date());;
+        data.task[0].end_date = toDateString(new Date());;
+
         this.title = data.plan.title;
         this.name = data.plan.name;
+        this.rev = data.plan.rev;
         this.purpose = data.plan.purpose;
-        this.start_date = data.plan.start_date;
+        this.create_date = data.plan.create_date;
+        this.update_date = data.plan.update_date;
         this.status = data.plan.status;
         this.masterplan = data.plan.masterplan;
+        this.ticket_url = data.plan.ticket_url;
 
         this.tasks = new CTaskList(this,data);
         this.workers = new CWorkerList(this,data);
         this.references = new CReferenceList(data);
         this.holidaies = new CHolidayList(data);
+
+        // マスタープランオブジェクトの初期化
+        this.resetMasterPlan();
     }
 
     /**
@@ -123,14 +148,24 @@ export class CPlan {
     public load(data: DataJson) {
         this.title = data.plan.title;
         this.name = data.plan.name;
+        this.rev = data.plan.rev;
         this.purpose = data.plan.purpose;
-        this.start_date = data.plan.start_date;
+        this.create_date = data.plan.create_date;
+        this.update_date = data.plan.update_date;
         this.masterplan = data.plan.masterplan;
+        this.ticket_url = data.plan.ticket_url;
 
         this.tasks = new CTaskList(this,data);
         this.workers = new CWorkerList(this,data);
         this.references = new CReferenceList(data);
         this.holidaies = new CHolidayList(data);
+        // マスタープランオブジェクトの初期化
+        this.resetMasterPlan();
+    }
+
+    // マスタープランオブジェクトの初期化
+    public resetMasterPlan() {
+        this._masterplan = null;
     }
 
     /**
@@ -144,49 +179,20 @@ export class CPlan {
                     if (this._masterplan != null && response.code == 0) {
                         this._masterplan.load(response.result.data as DataJson);
                         console.log("master plan loaded");
+                        this._makeMasterMileStoneValueOptions();
                     }
                 });
             }
         }
     }
-
-    /**
-     * TaskPanelを表示するための配列を取得する
-     */
-    public getTaskRows():ITaskRows[] {
-        return this.tasks.getTaskRows();
+    private _makeMasterMileStoneValueOptions() {
+        this._masterplan_options = [];
+        this._masterplan_options.push({value:"",label:""})
+        this.getMasterMilestoneRows().map((row)=>{
+            this._masterplan_options.push({value:row.id,label:row.name});                
+        });
     }
 
-    /**
-     * 新規スケジュールのObject
-     * 
-     * @param id IDの下に追加する
-     */
-    public addTask(id:number):number {
-        return this.tasks.addTask(id);
-    }
-    /**
-     * スケジュールの追加
-     *
-     * @param data 
-     */
-    public updateTask(data:object) {
-        this.tasks.updateTask(data);
-    }
-    /**
-     * タスクの情報を更新する（差分のみ）
-     */
-    public updateTaskDiff(data:IUpdateTask) {
-        this.tasks.updateTaskDiff(data);
-    }
-    /**
-     * スケジュールを削除する
-     * 
-     * @param id ID
-     */
-    public delTask(id:number) {
-        this.tasks.delTask(id);
-    }
     /**
      * pre_idのvaliueOptionsを取得
      */
@@ -195,45 +201,10 @@ export class CPlan {
     }
 
     /**
-     * 新規目的用のObject
-     */
-    public getWorkerRows():object[] {
-        return this.workers.getRows();
-    }
-    /**
-     * 新規目的地用のObject
-     */
-    public getNewWorker():CWorker {
-        return this.workers.getNewData();
-    }
-
-    /**
      * SelectのValueOptionを出力する
      */
-    public getWorkerValueOptions():Object[] {
+    public getWorkerValueOptions():IValueOptions[] {
         return this.workers.getWorkerValueOptions();
-    }
-    /**
-     * 目的の追加
-     *
-     * @param data 
-     */
-    public updateWorker(data:object) {
-        this.workers.updateData(data);
-    }
-    /**
-     * 目的を削除する
-     * 
-     * @param id ID
-     */
-    public delWorker(id:number) {
-        this.workers.delData(id);
-    }
-    /**}
-     * 目的地を取得する
-     */
-    public getWorker(id:number) {
-        return this.workers.getData(id);
     }
 
     /**
@@ -362,7 +333,7 @@ export class CPlan {
         let sc: ITask;
         let grp_ids:number[] = [];
         values.push({value:"",label:""});
-        this.getTaskRows().map((row)=>{
+        this.tasks.getTaskRows().map((row)=>{
             if (! grp_ids.includes(row.grp_id)) {
                 grp_ids.push(row.grp_id);
                 values.push({value:row.id,label:String(row.id)});
@@ -372,15 +343,31 @@ export class CPlan {
     }
 
     /**
+     * リンクタイプのValueOptions
+     */
+    public getLinkTypeValueOptions():IValueOptions[] {
+        return CPlan.link_type_options;        
+    }
+
+    /**
      * マスタープランのマイルストーンのValueOptions
      */
     public getMasterPlanMileStoneValueOptions():IValueOptions[] {
-        let values:IValueOptions[] = [];
-        values.push({value:"",label:""})
-        this.getMasterMilestoneRows().map((row)=>{
-            values.push({value:row.id,label:row.name});                
-        });
-        return values;
+        return this._masterplan_options;
+    }
+
+    /**
+     * マスタープランのマイルストーン名を取得
+     */
+    public getMasterPlanMilestoneName(key:null|number):string{
+        if (key !== null) {
+            for (let row of this._masterplan_options) {
+                if (row.value == key) {
+                    return row.label;
+                }
+            }
+        }
+        return "";
     }
 
     /**
@@ -399,63 +386,14 @@ export class CPlan {
      */
     public getMilestoneRows():ITaskRows[] {
         let rows: ITaskRows[] = [];
-        this.getTaskRows().map((row:ITaskRows)=>{
+        this.tasks.getTaskRows().map((row:ITaskRows)=>{
             if (row.type == "milestone") {
-                row.id = row.id+1000;
-                rows.push(row);
+                let row2 = {...row};
+                row2.id = row2.id+1000;
+                rows.push({...row2});
             }
         });
         return rows;
-    }
-
-    /**
-     * ReactGanttChart用のデータを生成する
-     */
-    public getReactGanttTasks():ITask[] {
-        let tasks:ITask[] = [];
-        let sc: ITask;
-        let parent_id: number|null = null;
-        if (this._masterplan !== null) {
-            tasks.push({id:1000,text:"マスター",type:"summary",open:true});
-            this.getMasterMilestoneRows().map((row:ITaskRows)=>{
-                sc = {
-                    id: row.id,
-                    start: row.end_date2,
-                    duration: 0,
-                    text: row.name,
-                    type: "milestone",
-                    parent: 1000,
-                };
-                tasks.push(sc);
-            }); 
-        }
-        this.getTaskRows().map((row:ITaskRows)=>{
-            sc = {
-                id: row.id,
-                start: row.start_date2,
-                duration: row.duration - 1,
-                text: row.name,
-                type: row.duration == 0 ? "milestone":"task",
-                progress: row.progress,
-            };
-            if (row.level != 0) {
-                sc.parent =  parent_id;
-            } else {
-                parent_id = row.id;
-                sc.parent =  0;
-                sc.open = true;
-            }
-            tasks.push(sc);
-        });
-        return tasks;
-    }
-
-    /**
-     * ReactGanttChart用のリンクデータを生成する
-     */
-    public getReactGanttLinks():ILink[] {
-        let links:ILink[] = <IGppGanttLink[]>this.getReactGanttLinks();;
-        return links;
     }
 
     /**
@@ -469,11 +407,11 @@ export class CPlan {
             this.getMasterMilestoneRows().map((row:ITaskRows)=>{
                 dd = {
                     id: row.id,
-                    start_date: row.end_date2,
+                    start_date: row.start_date2,
                     end_date: row.end_date2,
-                    duration: 0,
+                    duration: row.duration,
                     name: row.name,
-                    level: row.level,
+                    level: 99,
                 };
                 data.push(dd);
             }); 
@@ -503,14 +441,14 @@ export class CPlan {
     public getGppGanttLinks():IGppGanttLink[] {
         let links:IGppGanttLink[] = [];
         let no:number = 1;
-        const rows = this.getTaskRows();
+        const rows = this.tasks.getTaskRows();
         for(let i = 0; i < rows.length; i++) {
             // 連結の前後をリンクにする
-            if (i !=0 && rows[i].start_date_auto == "pre") {
+            if (i > 0 && rows[i].start_date_auto == "pre") {
                 links.push({ id: no, source: rows[i-1].id, target: rows[i].id, type: "e2s" });
                 no++;
             }
-            if (rows[i].start_date_auto == "post") {
+            if (i < rows.length - 1 && rows[i].start_date_auto == "post") {
                 links.push({ id: no, source: rows[i+1].id, target: rows[i].id, type: "s2e" });
                 no++;
             }
@@ -518,7 +456,15 @@ export class CPlan {
             let milestone:number|null;
             milestone = rows[i].master_milestone;
             if (milestone != null) {
-                links.push({ id: no, source: rows[i].id, target: milestone, type: "e2s" });
+                links.push({ id: no, source: rows[i].id, target: milestone, type: "e2e" });
+                no++;
+            }
+            // リンク情報に基づいてリンクする
+            let link_id:null|number = rows[i].link_id;
+            let link_type:string = rows[i].link_type;
+            if (rows[i].link_type != "" && link_id !== null &&
+                (link_type == "s2s" || link_type == "s2e" || link_type == "e2s" || link_type == "e2e")) {
+                links.push({ id: no, source: link_id, target: rows[i].id, type: link_type });
                 no++;
             }
         }
@@ -531,12 +477,15 @@ export class CPlan {
     public getTableRows():ITaskTable[] {
         let rows: ITaskTable[] = [];
         let sc: ITaskTable;
-        this.getTaskRows().map((row)=>{
+        this.tasks.getTaskRows().map((row)=>{
             sc = {...row,
                   worker: this.workers.getNewTableRow(),
                   level_label: this.getLevelName(row.level),
                   type_label: this.getTypeName(row.type),
-                  start_time_auto_label: this.getAutoName(row.start_date_auto)};
+                  start_time_auto_label: this.getAutoName(row.start_date_auto),
+                  master_milestone_label: this.getMasterPlanMilestoneName(row.master_milestone),
+                  ticket_link: this.getTicketLink(row.ticket_no)
+                };
             if (row.worker_id != null) {
                 sc.worker = {...this.workers.getWorkerTableRow(row.worker_id)};
             }
@@ -545,6 +494,20 @@ export class CPlan {
         let filter = new TableFilter(rows);
 
         return filter.do();
+    }
+
+    /**
+     * チケットのURLを出力する
+     * @param ticket_no チケット番号
+     * @returns 
+     */
+    public getTicketLink(ticket_no:string):null|URL {
+        if (this.ticket_url == "" || this.ticket_url === undefined || ticket_no == "" || ticket_no === undefined) {
+            return null;
+        } else {
+            const url:URL = new URL(this.ticket_url+ticket_no);
+            return url;
+        }
     }
 
     /**
@@ -588,12 +551,15 @@ export class CPlan {
     public getSaveData():object {
         let data = {
             plan: {
-                name:this.name,
                 title:this.title,
+                name:this.name,
+                rev:this.rev,                
                 purpose: this.purpose,
-                start_date: this.start_date,
+                create_date: this.create_date,
+                update_date: toDateString(new Date()),
                 status: this.status,
                 masterplan: this.masterplan,
+                ticket_url: this.ticket_url,
             },
             task: this.tasks.getSaveData(),
             worker: this.workers.getSaveData(),
@@ -602,88 +568,11 @@ export class CPlan {
         }
         return data;
     }
-
     /**
-     * 参考の配列
+     * Revを上げる
      */
-    public getReferenceRows():IReference[] {
-        return this.references.getRows();
-    }
-    /**
-     * 新規参考のObject
-     */
-    public getNewReference() {
-        return this.references.getNewData();
-    }
-    /**
-     * 参考の追加
-     *
-     * @param data 
-     */
-    public updateReference(data:object) {
-        this.references.updateData(data);
-    }
-    /**
-     * 参考を削除する
-     * 
-     * @param id ID
-     */
-    public delReference(id:number) {
-        this.references.delData(id);
-    }
-    /**}
-     * 参考を取得する
-     */
-    public getReference(id:number) {
-        return this.references.getData(id);
-    }
-
-    /**
-     * 参考の配列
-     */
-    public getHolidayRows():IHoliday[] {
-        return this.holidaies.getRows();
-    }
-    /**
-     * 新規参考のObject
-     */
-    public getNewHoliday() {
-        return this.holidaies.getNewData();
-    }
-    /**
-     * 参考の追加
-     *
-     * @param data 
-     */
-    public updateHoliday(data:object) {
-        this.holidaies.updateData(data);
-    }
-    /**
-     * 参考を削除する
-     * 
-     * @param id ID
-     */
-    public delHoliday(id:number) {
-        this.holidaies.delData(id);
-    }
-    /**}
-     * 参考を取得する
-     */
-    public getHoliday(id:number) {
-        return this.holidaies.getData(id);
-    }
-
-    /**
-     * 休日の配列を取得
-     */
-    public getHolidayDates():string[] {
-        return this.holidaies.getDays();
-    }
-    /**
-     * 次の稼働日を取得
-     */
-    public getNextWorkday(today:Date,duration:number,vect:string):Date {
-        return this.holidaies.getNextWorkday(today,duration,vect);
+    public incRev() {
+        this.rev++;
     }
 }
 

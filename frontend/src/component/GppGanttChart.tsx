@@ -1,19 +1,25 @@
+/**
+ * GppGanttChart Componennt
+ * 
+ * ガントチャートを表示するコンポーネント
+ * 
+ * @license NIT license
+ * @author GreatPandaPapa
+ * @homepage https://github.com/greatpandapapa
+ */
 import {useState,memo,ReactNode,useRef,createContext} from 'react';
-import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import Radio from '@mui/material/Radio';
 import Grid from '@mui/material/Grid';
 import Button from '@mui/material/Button';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { styled } from '@mui/material/styles';
-import {useWindowSize} from "../lib/useWindowsSize";
 import { format } from "date-fns";
+import {useWindowSize} from "./useWindowsSize";
 
 /**
  * 月末のDateオブジェクトを取得
@@ -42,28 +48,54 @@ const cal_unit_list = {
     week: "week",
     month: "month"
 } as const;
+// ガントチャートの列設定
+const cell_width_list = {
+    standard: "standard",
+    narrow: "narrow",
+} as const;
 // ガントチャートのconfig
 export interface IGppGanttConfig {
     start: null|Date;
     end: null|Date;
     cell_height: number;
+    cell_width_class: typeof cell_width_list[keyof typeof cell_width_list];
     cell_day_width: number;
     cell_week_width: number;
     cell_month_width: number;
+    cell_day_width_standard: number;
+    cell_week_width_standard: number;
+    cell_month_width_standard: number;
+    cell_day_width_narrow: number;
+    cell_week_width_narrow: number;
+    cell_month_width_narrow: number;
     grid_boarder_color: string;
     default_bar_fill_color: string;
     default_bar_stroke_color: string;
     default_diamond_fill_color: string;
     default_diamond_stroke_color: string;
+    default_level_bar_fill_color: string;
+    default_level_bar_stroke_color: string;
     progress_fill_color:string;
     calendar_satday_bgcolor: string;
     calendar_sunday_bgcolor: string;
     calendar_holiday_bgcolor: string;
+    calendar_today_bgcolor: string;
     calendar_even_bgcolor: string;
     calendar_unit: typeof cal_unit_list[keyof typeof cal_unit_list];
     link_line_color: string;
     label_align: typeof label_align_list[keyof typeof label_align_list];
     holidaies: string[];
+    level_indent: number;
+    date_format: string;
+    date_year_format: string;
+    date_year_month_format: string;
+    date_month_format: string;
+    date_day_format: string;
+    lang_mesg_month: string;
+    lang_mesg_week: string;
+    lang_mesg_day: string;
+    lang_mesg_standard: string;
+    lang_mesg_narrow: string;
 }
 
 // デフォルトのconfigを取得する
@@ -72,23 +104,44 @@ export function GppDefaultConfig():IGppGanttConfig {
         start: null,
         end: null,
         cell_height:25,
+        cell_width_class: "standard",
         cell_day_width: 25,
         cell_week_width: 50,
         cell_month_width: 100,
+        cell_day_width_standard: 25,
+        cell_week_width_standard: 50,
+        cell_month_width_standard: 100,
+        cell_day_width_narrow: 15,
+        cell_week_width_narrow: 30,
+        cell_month_width_narrow: 60,
         grid_boarder_color: "gainsboro",
         default_bar_fill_color: "lightskyblue",
         default_bar_stroke_color: "blue",
         default_diamond_fill_color: "purple",
         default_diamond_stroke_color: "blue",
+        default_level_bar_fill_color: "yellow",
+        default_level_bar_stroke_color: "blue",
         progress_fill_color: "gray",
         calendar_satday_bgcolor: "#DDFFFF",
         calendar_sunday_bgcolor: "#DDFFFF",
         calendar_holiday_bgcolor: "#DDFFFF",
+        calendar_today_bgcolor: "#DDA0DD",
         calendar_even_bgcolor: "#F5F5F5",
         calendar_unit: "day",
         link_line_color: "red",
         label_align: "right",
-        holidaies: []
+        holidaies: [],
+        level_indent: 4,
+        date_format: "yyyy-MM-dd",
+        date_year_format: "yyyy",
+        date_year_month_format: "yyyy/MM",
+        date_month_format: "MM",
+        date_day_format: "dd",
+        lang_mesg_month: "Month",
+        lang_mesg_week: "Week",
+        lang_mesg_day: "Day",
+        lang_mesg_standard: "Standard",
+        lang_mesg_narrow: "Narrow",
     };
 }
 
@@ -193,6 +246,17 @@ class CGppGanttDataManager {
         // ガントチャートエリアの幅と高さ
         this.width = (this.getPeriodNums() + 1) * this.w;
         this.height = this.data.length * this.h;
+
+        // セルの幅
+        if (this.config.cell_width_class == "standard") {
+            this.config.cell_day_width = this.config.cell_day_width_standard;
+            this.config.cell_week_width = this.config.cell_week_width_standard;
+            this.config.cell_month_width = this.config.cell_month_width_standard;
+        } else if (this.config.cell_width_class == "narrow") {
+            this.config.cell_day_width = this.config.cell_day_width_narrow;
+            this.config.cell_week_width = this.config.cell_week_width_narrow;
+            this.config.cell_month_width = this.config.cell_month_width_narrow;
+        }
     }
 
     // start_date,end_dateの設定
@@ -261,23 +325,27 @@ class CGppGanttDataManager {
     }
 
     // X座標を取得
-    getXbyIndex(index:number):null|{x1:number,x2:number,w:number,pw:number,duration:number} {
+    getXbyIndex(index:number):null|{x1:number,x2:number,w:number,pw:number,duration:number,level:null|number} {
         if (this.data[index] !== undefined) {
-            let start_date = this.data[index].start_date;
-            let end_date = this.data[index].end_date;
-            let duration = this.data[index].duration;
-            let progress = this.data[index].progress;
+            const start_date = this.data[index].start_date;
+            const end_date = this.data[index].end_date;
+            const duration = this.data[index].duration;
+            const progress = this.data[index].progress;
+            const level = this.data[index].level;
             if (start_date !== undefined && end_date !== undefined && duration !== undefined) {
                 let sdidx = this.unit_culator.getDayIndex(start_date);
                 let edidx = this.unit_culator.getDayIndex(end_date,"end");
+                let x2:number;
                 if (duration == 0) {
-                    edidx = sdidx+1;
+                    x2 = (sdidx)*this.w + this.w_mark;
+                } else {
+                    x2 = (edidx)*this.w;
                 }
                 let pw = 0;
                 if (progress != undefined) {
                     pw = (edidx-sdidx)*progress/100;
                 }
-                return {x1:sdidx*this.w,x2:(edidx)*this.w,w:(edidx-sdidx)*this.w,pw:pw*this.w,duration:duration};
+                return {x1:sdidx*this.w,x2:x2,w:(edidx-sdidx)*this.w,pw:pw*this.w,duration:duration,level:level};
             }
         }
         return null;
@@ -292,7 +360,10 @@ class CGppGanttDataManager {
         if (this.data[index] !== undefined) {
             const row = this.data[index];
 
-            if (row.duration === 0) {
+            if (row.level != 99) {
+                color = (row.bar_color !== undefined? row.bar_color : this.config.default_level_bar_fill_color);
+                st_color = (row.bar_stroke_color !== undefined? row.bar_stroke_color : this.config.default_level_bar_stroke_color);
+            } else if (row.duration === 0) {
                 color = this.config.default_diamond_fill_color;
                 st_color = this.config.default_diamond_stroke_color;
             } else {
@@ -321,24 +392,17 @@ class CGppGanttDataManager {
         return null;
     }
 
-    // リンク戦の色
+    // リンク線の色
     getLinkLineColor():string {
         return this.config.link_line_color;
     }
 
-    // dayがstart_dayから何日目かを計算
-/*
-    getDayIndex(date:Date):number {
-        return (date.getTime() - this.start_date.getTime()) / (1000 * 60 * 60 * 24);
-    }
-*/
-
     // 作業名のインデント
-    geNameIndet(row:IGppGanttData,id:string):number {
+    getNameIndent(row:IGppGanttData,id:string):number {
         if (id == "name") {
-            if (row.level != 0) {
-                return 4;
-            }
+            if (row.level == 0) return 0;
+            else if (row.level == 1) return this.config.level_indent;
+            else return this.config.level_indent*2;
         }
         return 0;
     }
@@ -352,11 +416,11 @@ class CGppGanttDataManager {
             value = row.name;
         } else if (id == "start_date") {
             if (row.start_date !== undefined) {
-                value = format(row.start_date, "yyyy-MM-dd")
+                value = this.toDateString(row.start_date);
             }
         } else if (id == "end_date") {
             if (row.end_date !== undefined) {
-                value = format(row.end_date, "yyyy-MM-dd")
+                value = this.toDateString(row.end_date);
             }
         } else if (id == "duration") {
             if (row.duration !== undefined) {
@@ -410,27 +474,26 @@ class CGppGanttDataManager {
         return this.unit_culator.getPeriodNums();
     }
 
-    // 1行目の幅
-    get1stRowWidth(today:Date,i:number):null|number {
-        return this.unit_culator.get1stRowWidth(today,i);
+    // Date型の日付をyyyy-MM-dd形式で文字列にする
+    toDateString(date:Date):string {
+        return format(date,this.config.date_format);
     }
-    // 1行目のラベル
-    get1stRowLabel(today:Date):string {
-        return this.get1stRowLabel(today);
+    // 週番号を取得する
+    getCalenderWeek(date:Date):string {
+        // 月曜日の日付にする
+        let dd:Date = new Date(date.getTime());
+        dd.setDate(dd.getDate()-dd.getDay());
+        // 1/1からの日数を計算
+        const firstDayOfYear:Date = new Date(dd.getFullYear(), 0, 1);
+        let pastDaysOfYear = Math.floor((dd.getTime() - firstDayOfYear.getTime()) / 86400000) + 1;
+        let cw:number;
+        cw = Math.floor((pastDaysOfYear / 7)+1);
+        if (cw == 0) {
+            cw = 53;
+        }
+        const cws = String(dd.getFullYear())+"-"+String(cw);
+        return cws;
     }
-    // 2行目のラベル
-    get2ndRowLabel(today:Date):string {
-        return this.get2ndRowLabel(today);
-    }
-    // 日付のインクリメント
-    getIncDate(today:Date):Date {
-        return this.getIncDate(today);
-    }
-    // 背景色
-    getVerticalBgcolor(today:Date,i:number):null|string {
-        return this.getVerticalBgcolor(today,i);
-    }
-
 }
 
 /**
@@ -521,16 +584,24 @@ class CMOnthGppGanttCalUnitCalculator extends CGppGanttCalUnitCalculator {
 
     // 1行目のラベル
     public get1stRowLabel(today:Date):string {
-        return (today.getFullYear()).toString();
+        return format(today,this.dm.config.date_year_format);
     }
     // 2行目のラベル
     public get2ndRowLabel(today:Date):string {
-        return (today.getMonth()+1).toString();
+        return format(today,this.dm.config.date_month_format);
     }
     // 日付のインクリメント
     public getIncDate(today:Date):Date {
         today.setMonth(today.getMonth()+1);
         return today;
+    }
+    // 背景色
+    public getVerticalBgcolor(today:Date,i:number):null|string {
+        if (format(today,"yyyy-MM") == format(new Date(),"yyyy-MM")){
+            return this.dm.config.calendar_today_bgcolor;
+        } else {
+            return super.getVerticalBgcolor(today,i);
+        }
     }
 }
 
@@ -570,16 +641,25 @@ class CWeekGppGanttCalUnitCalculator extends CGppGanttCalUnitCalculator {
     }
     // 1行目のラベル
     public get1stRowLabel(today:Date):string {
-        return (today.getFullYear())+"/"+(today.getMonth()+1);
+        return format(today,this.dm.config.date_year_month_format);
     }
     // 2行目のラベル
     public get2ndRowLabel(today:Date):string {
-        return today.getDate().toString();
+        return format(today,this.dm.config.date_day_format);
     }
     // 日付のインクリメント
     public getIncDate(today:Date):Date {
         today.setDate(today.getDate()+7);
         return today;
+    }
+    // 背景色
+    public getVerticalBgcolor(today:Date,i:number):null|string {
+        const today2 = new Date();
+        if (this.dm.getCalenderWeek(today) == this.dm.getCalenderWeek(today2)) {
+            return this.dm.config.calendar_today_bgcolor;
+        } else {
+            return super.getVerticalBgcolor(today,i);
+        }
     }
 }
 
@@ -620,11 +700,11 @@ class CDayGppGanttCalUnitCalculator extends CGppGanttCalUnitCalculator {
     }
     // 1行目のラベル
     public get1stRowLabel(today:Date):string {
-        return (today.getFullYear())+"/"+(today.getMonth()+1);
+        return format(today,this.dm.config.date_year_month_format);
     }
     // 2行目のラベル
     public get2ndRowLabel(today:Date):string {
-        return today.getDate().toString();
+        return format(today,this.dm.config.date_day_format);
     }
     // 日付のインクリメント
     public getIncDate(today:Date):Date {
@@ -633,13 +713,13 @@ class CDayGppGanttCalUnitCalculator extends CGppGanttCalUnitCalculator {
     }
     // 縦の背景色
     public getVerticalBgcolor(today:Date,i:number):null|string {
-        if (today.getDay() === 0) {
+        if (this.dm.toDateString(today) == this.dm.toDateString(new Date())) {
+            return this.dm.config.calendar_today_bgcolor;
+        } else if (today.getDay() === 0) {
             return this.dm.config.calendar_sunday_bgcolor;
-        } 
-        if (today.getDay() === 6) {
+        } else if (today.getDay() === 6) {
             return this.dm.config.calendar_satday_bgcolor;
-        }
-        if (this.dm.config.holidaies.includes(format(today, "yyyy-MM-dd"))) {
+        } else if (this.dm.config.holidaies.includes(this.dm.toDateString(today))) {
             return this.dm.config.calendar_holiday_bgcolor;
         }
         return null;
@@ -671,7 +751,9 @@ function GppGanttTableHeader(props:GppGanttChartInternalProps) {
           </TableRow>
           <TableRow>
             {dm.columns.map((col)=>{
-                return (<GanttTableCell sx={{height:dm.h,width:col.width}} align={col.align} >{col.name}</GanttTableCell>);
+                return (<GanttTableCell sx={{height:dm.h,width:col.width}} align={col.align} >
+                {col.name}
+                </GanttTableCell>);
             })}
           </TableRow>
         </TableHead>
@@ -694,8 +776,11 @@ function GppGanttTableBody(props:GppGanttChartInternalProps) {
                     <TableRow>
                     {dm.columns.map((col) => {
                         return (
-                        <GanttTableCell sx={{height:dm.h-1,maxWidth:col.width,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} align={col.align} >
-                            <Box sx={{marginLeft:dm.geNameIndet(row,col.id),padding:0}}>{dm.getValueByColId(row,col.id)}</Box>
+                        <GanttTableCell sx={{height:dm.h-1,maxWidth:col.width,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} align={col.align} 
+                                        onClick={(event) => {
+                                            if (props.onClickTask !== undefined) props.onClickTask(dm.getValueByColId(row,"id"));
+                                        }}>
+                            <Box sx={{marginLeft:dm.getNameIndent(row,col.id),padding:0}}>{dm.getValueByColId(row,col.id)}</Box>
                         </GanttTableCell>
                         );
                     })}
@@ -748,7 +833,7 @@ function GppSvgGanttChartHeader(props:GppGanttChartInternalProps) {
     }
 
     return (
-        <Stack alignItems="stretch" sx={{position:"sticky",top:0}}>
+        <Stack alignItems="stretch" sx={{position:"sticky",top:0,marginBottom:0.5}}>
             <svg width={dm.width} height={dm.h*2} viewBox={viewbox} preserveAspectRatio="xMidYMid slice" role="img" style={{backgroundColor:"white"}}>
                 <rect x={0} y={0} width={dm.width} height={dm.h*2} fill="transparent" stroke={dm.config.grid_boarder_color}></rect>
                 {vbgfill}
@@ -781,7 +866,7 @@ function GppSvgGanttChartBody(props:GppGanttChartInternalProps) {
             vbgfill.push(<rect x={i*dm.w} y="0" width={dm.w} height={dm.height} fill={color}/>);
         }
         vlines.push(<line x1={i*dm.w} y1="0" x2={i*dm.w} y2={dm.height} stroke={dm.config.grid_boarder_color}/>);
-        today.setDate(today.getDate()+1);
+        today = unit_culator.getIncDate(today);
     }
 
     let hlines = [];
@@ -825,7 +910,11 @@ function GppSvgGanttChartBars(dm:CGppGanttDataManager):ReactNode[] {
             // バーの色
             // バーの描画
             let colors = dm.getColorsByIndex(i);
-            if (xs.duration === 0) {
+            if (xs.level != 99) {
+                bars.push(GppSvgGanttChartLevelBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke));
+                bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/4+2,xs.pw-4,dm.h/2-4,colors.progress));
+                bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align));
+            } else if (xs.duration === 0) {
                 bars.push(GppSvgGanttChartDiamond(xs.x1+2,y+4,dm.w_mark-4,dm.h-4,colors.fill,colors.stroke));
                 bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align));
             } else {
@@ -855,6 +944,17 @@ function GppSvgGanttChartLinkLines(dm:CGppGanttDataManager):ReactNode[] {
     return lines;
 }
 
+// レベルバー
+function GppSvgGanttChartLevelBar(x:number,y:number,w:number,h:number,fill:string,stroke:string) {
+    let points:string = "";
+    points += String(x)+","+String(y)+" ";
+    points += String(x+w)+","+String(y)+" ";
+    points += String(x+w)+","+String(y+h)+" ";
+    points += String(x+w-6)+","+String(y+h-6)+" ";
+    points += String(x+6)+","+String(y+h-6)+" ";
+    points += String(x)+","+String(y+h)+" ";
+    return(<polygon points={points} fill={fill} stroke={stroke} rx="5"></polygon>);
+}
 // バー
 function GppSvgGanttChartBar(x:number,y:number,w:number,h:number,fill:string,stroke:string) {
     return(<rect x={x} y={y} width={w} height={h} fill={fill} stroke={stroke} rx="5"></rect>);
@@ -887,25 +987,32 @@ export type GppGanttChartProps = {
     columns: IGppGanttColumns[],
     data: IGppGanttData[],
     links: IGppGanttLink[],
+    onClickTask?: (id:string)=>void,       // タスクをクリックしたときに呼ばれるオールバック
 }
 
 type GppGanttChartInternalProps = {
     dm: CGppGanttDataManager;
+    onClickTask?: (id:string)=>void,       // タスクをクリックしたときに呼ばれるオールバック
 }
 
 // Propsの型
 type SelectScaleProps = {
+  dm: CGppGanttDataManager;
   unit: string;
+  width: string;
   setUnit: (unit:string) => void;
+  setWidth: (width:string) => void;
 }
 
 // 表示スケールの変更
 function SelectScale(props:SelectScaleProps) {
     return (
         <Grid container spacing={1} justifyContent="flex-end" sx={{width:1}}>
-            <Button variant={props.unit=="month"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("month")}}>月</Button>
-            <Button variant={props.unit=="week"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("week")}}>週</Button>
-            <Button variant={props.unit=="day"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("day")}}>日</Button>
+            <Button variant={props.width=="standard"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setWidth("standard")}}>{props.dm.config.lang_mesg_standard}</Button>
+            <Button variant={props.width=="narrow"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setWidth("narrow")}}>{props.dm.config.lang_mesg_narrow}</Button>
+            <Button variant={props.unit=="month"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("month")}}>{props.dm.config.lang_mesg_month}</Button>
+            <Button variant={props.unit=="week"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("week")}}>{props.dm.config.lang_mesg_week}</Button>
+            <Button variant={props.unit=="day"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("day")}}>{props.dm.config.lang_mesg_day}</Button>
         </Grid>);
 }
 
@@ -914,12 +1021,17 @@ function SelectScale(props:SelectScaleProps) {
  */
 export function GppGanttChart(props:GppGanttChartProps) {
     const [unit,setUnit] = useState<string>(props.config.calendar_unit);
+    const [width_class,setWidthClass] = useState<string>(props.config.cell_width_class);
     const tableEl = useRef<HTMLDivElement>(null);
     const calendarEl = useRef<HTMLDivElement>(null);
 
-    // DataManager
+    // 列の表示単位
     if (unit == "day" || unit == "week" || unit == "month") {
         props.config.calendar_unit = unit;
+    }
+    // 列幅
+    if (width_class == "standard" || width_class == "narrow") {
+        props.config.cell_width_class = width_class;
     }
     let dm:CGppGanttDataManager = new CGppGanttDataManager(props.config,props.columns,props.data,props.links);
     dm.setup();
@@ -940,12 +1052,12 @@ export function GppGanttChart(props:GppGanttChartProps) {
   
     return (
         <Stack direction={"column"} spacing={0.5}>
-            <SelectScale unit={unit} setUnit={setUnit}/>
+            <SelectScale dm={dm} unit={unit} setUnit={setUnit} width={width_class} setWidth={setWidthClass}/>
             <Stack direction={"row"} spacing={0.5}>
                 <Box ref={tableEl} onScroll={()=>{handleScroll(true)}} sx={{width:400,overflowY:'auto',overflowX:"scroll",height:size[1]-160}}>
-                    <Stack direction={"column"} spacing={1}>
+                    <Stack direction={"column"} spacing={0}>
                         <GppGanttTableHeader dm={dm}/>
-                        <GppGanttTableBody  dm={dm}/>
+                        <GppGanttTableBody dm={dm} onClickTask={props.onClickTask} />
                     </Stack>
                 </Box>
                 <Box ref={calendarEl} onScroll={()=>{handleScroll(false)}} sx={{width:cal_width ,overflow: 'auto',height:size[1]-160}} >

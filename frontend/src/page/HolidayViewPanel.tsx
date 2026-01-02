@@ -8,8 +8,10 @@ import { plan } from '../lib/Plan';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Close';
-import {useWindowSize} from '../lib/useWindowsSize';
+import {useWindowSize} from '../component/useWindowsSize';
 import { Link } from 'react-router-dom';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs, { Dayjs } from 'dayjs';
 
 import {
   GridRowsProp,
@@ -59,7 +61,7 @@ export function HolidayGrid(props:HolidayGridProps) {
 
   // 削除ボタンの処理
   const handleDeleteClick = (id: GridRowId) => () => {
-    plan.delHoliday(id as number);
+    plan.holidaies.delData(id as number);
     props.updateList();
   };
 
@@ -77,7 +79,7 @@ export function HolidayGrid(props:HolidayGridProps) {
   const processRowUpdate = (newRow: GridRowModel) => {
     const updatedRow = { ...newRow, isNew: false };
     
-    plan.updateHoliday(newRow as object)
+    plan.holidaies.updateData(newRow as object)
     props.updateList();
 
     return updatedRow;
@@ -181,25 +183,29 @@ export function HolidayGrid(props:HolidayGridProps) {
  * 作業者パネル
  */
 export function HolidayPanel() {
-  const [HolidayRows,setHolidayRows] = useState<object[]>(plan.getHolidayRows());
+  const [HolidayRows,setHolidayRows] = useState<object[]>(plan.holidaies.getRows());
+  const [date,setDate] = useState<Dayjs>(dayjs(new Date()));
 
   // リスト更新
   const updateList = () => {
-    setHolidayRows(plan.getHolidayRows());
+    setHolidayRows(plan.holidaies.getRows());
   }
 
   // 作業者を追加
   const addClickHandler = () => {
-    const item = plan.getNewHoliday();
-    plan.updateHoliday(item);
+    const item = plan.holidaies.getNew(date.toDate());
+    plan.holidaies.updateData(item);
     updateList();
   }
 
   return (
     <div>
-      <Box sx={{display: 'flex',flexDirection: 'row',m:0, p:0,marginY: "10px" }}>
+      <Box sx={{display: 'flex',flexDirection: 'row',m:0, p:0,marginY: "0px" }}>
         <Box sx={{m:0, p:0}}>
-        <Button onClick={addClickHandler} fullWidth><AddIcon></AddIcon>追加</Button>
+        <DatePicker sx={{margin:0}} format="YYYY-MM-DD"
+                    defaultValue={date} 
+                    onChange={(newdate)=>{if (newdate != null) setDate(newdate);}} />
+        <Button onClick={addClickHandler} variant="outlined">追加</Button>
         </Box>
       </Box>
       <HolidayGrid HolidayRows={HolidayRows} updateList={updateList}></HolidayGrid>

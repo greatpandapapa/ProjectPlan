@@ -1,5 +1,6 @@
 import {
     DataJson,
+    IValueOptions,
     IWorker,
 } from "../lib/typings";
 import {
@@ -47,9 +48,9 @@ export class CWorkerList extends CBaseList<CWorker> {
      * 
      * @returns 
      */
-    public getWorkerValueOptions() {
-        let options = [];
-        options.push({value:null,label:""});
+    public getWorkerValueOptions():IValueOptions[] {
+        let options:IValueOptions[] = [];
+        options.push({value:"",label:""});
         for (let dt of this.list) {
             options.push({value:dt.id,label:dt.name});
         }

@@ -8,7 +8,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import {useWindowSize} from '../lib/useWindowsSize';
+import {useWindowSize} from '../component/useWindowsSize';
 import { Typography } from '@mui/material';
 import {getBgColor} from '../component/CustomMui';
 import { SlimTableCell } from '../component/CustomMui';

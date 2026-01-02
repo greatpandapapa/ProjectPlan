@@ -1,8 +1,9 @@
-import {useState,useCallback,memo} from 'react';
+import {useState,useCallback,memo,Profiler} from 'react';
 import Box from '@mui/material/Box';
 import { plan } from '../lib/Plan';
-import {useWindowSize} from '../lib/useWindowsSize';
-import { format } from "date-fns";
+import {useWindowSize} from '../component/useWindowsSize';
+import {EditTaskModal} from './TaskModal';
+import {ITaskRows} from '../lib/typings';
 
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -40,9 +41,13 @@ type TaskGridProps = {
  */
 export function TaskGrid(props:TaskGridProps) {
   const [width, height] = useWindowSize();
-  const initialRows: GridRowsProp = plan.getTaskRows(); 
+  const initialRows: GridRowsProp = plan.tasks.getTaskRows(); 
   const [rows, setRows] = useState(initialRows);
   const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
+
+  // 編集モーダル用
+  const [open, setOpen] = useState(false);
+  const [task_id, setTaskId] = useState<number>(0);
 
   // 編集終了ボタンの処理
   const handleRowEditStop: GridEventListener<'rowEditStop'> = (params, event) => {
@@ -59,14 +64,14 @@ export function TaskGrid(props:TaskGridProps) {
   // 編集保存ボタンの処理
   const handleSaveClick = (id: GridRowId) => () => {
     setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-    const initialRows: GridRowsProp = plan.getTaskRows(); 
+    const initialRows: GridRowsProp = plan.tasks.getTaskRows(); 
     setRows(initialRows);
   };
 
   // 削除ボタンの処理
   const handleDeleteClick = (id: GridRowId) => () => {
-    plan.delTask(id as number);
-    const initialRows: GridRowsProp = plan.getTaskRows(); 
+    plan.tasks.delTask(id as number);
+    const initialRows: GridRowsProp = plan.tasks.getTaskRows(); 
     setRows(initialRows);
   };
 
@@ -87,20 +92,20 @@ export function TaskGrid(props:TaskGridProps) {
   const handleAddClick = (id: GridRowId) => () => {
     const editedRow = rows.find((row) => row.id === id);
     if (editedRow != undefined) {
-      let new_id = plan.addTask(editedRow.id);
-      const initialRows: GridRowsProp = plan.getTaskRows(); 
+      let new_id = plan.tasks.addTask(editedRow.id);
+      const initialRows: GridRowsProp = plan.tasks.getTaskRows(); 
       setRows(initialRows);
       setRowModesModel({ ...rowModesModel, [new_id]: { mode: GridRowModes.Edit } });
     }
   };
 
+  // データ更新
   const processRowUpdate = (newRow: GridRowModel) => {
     const updatedRow = { ...newRow, isNew: false };
     setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
 
-    newRow.start_date = format(newRow.start_date2, "yyyy-MM-dd");
-    plan.updateTask(newRow as object)
-    const initialRows: GridRowsProp = plan.getTaskRows(); 
+    plan.tasks.updateTask(newRow as ITaskRows)
+    const initialRows: GridRowsProp = plan.tasks.getTaskRows(); 
     setRows(initialRows);
 
     return updatedRow;
@@ -109,6 +114,15 @@ export function TaskGrid(props:TaskGridProps) {
   const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) => {
     setRowModesModel(newRowModesModel);
   };
+
+  // 編集モーダルを閉じる
+  const handleOpen = () => setOpen(true);
+  // 編集モーダルを閉じる
+  const handleClose = () => {
+    const initialRows: GridRowsProp = plan.tasks.getTaskRows(); 
+    setRows(initialRows);
+    setOpen(false);
+  }
 
   // Editモードならeditableをtrueにする 
   let enable_editable:boolean;
@@ -129,6 +143,7 @@ export function TaskGrid(props:TaskGridProps) {
       type: 'singleSelect',
       width: 80,
       align: 'center',
+      headerAlign: 'center',
       editable: enable_editable,
       valueOptions: plan.getLevelValueOptions(),
     },
@@ -138,14 +153,15 @@ export function TaskGrid(props:TaskGridProps) {
       width: 250,
       editable: enable_editable,
       type: 'string',
+      headerAlign: 'center',
     },
     {
       field: 'start_date_auto',
       headerName: '連結',
       type: 'singleSelect',
       width: 60,
-      align: 'left',
-      headerAlign: 'left',
+      align: 'center',
+      headerAlign: 'center',
       editable: enable_editable,
       disableColumnMenu: true,
       valueOptions: plan.getAutoValueOptions(),
@@ -156,7 +172,16 @@ export function TaskGrid(props:TaskGridProps) {
       type: 'date',
       width: 100,
       align: 'left',
-      headerAlign: 'left',
+      headerAlign: 'center',
+      editable: enable_editable,
+    },
+    {
+      field: 'end_date2',
+      headerName: '終了日',
+      type: 'date',
+      width: 100,
+      align: 'left',
+      headerAlign: 'center',
       editable: enable_editable,
     },
     {
@@ -164,8 +189,8 @@ export function TaskGrid(props:TaskGridProps) {
       headerName: '日数',
       type: 'number',
       width: 80,
-      align: 'left',
-      headerAlign: 'left',
+      align: 'right',
+      headerAlign: 'center',
       disableColumnMenu: true,
       editable: enable_editable,
     },
@@ -173,6 +198,8 @@ export function TaskGrid(props:TaskGridProps) {
       field: 'type',
       headerName: '種類',
       width: 100,
+      align: 'center',
+      headerAlign: 'center',
       editable: enable_editable,
       type: 'singleSelect',
       valueOptions: plan.getTypeValueOptions(),
@@ -181,10 +208,32 @@ export function TaskGrid(props:TaskGridProps) {
       field: 'worker_id',
       headerName: '作業者',
       width: 150,
+      headerAlign: 'center',
       editable: enable_editable,
       type: 'singleSelect',
       valueOptions: plan.getWorkerValueOptions(),
     },
+    {
+      field: 'progress',
+      headerName: '進捗率',
+      width: 100,
+      align: 'right',
+      headerAlign: 'center',
+      editable: enable_editable,
+      type: 'singleSelect',
+      valueOptions: plan.getProgressValueOptions(),
+    },
+    {
+      field: 'ticket_no',
+      headerName: 'チケット',
+      type: 'string',
+      width: 80,
+      align: 'center',
+      headerAlign: 'center',
+      disableColumnMenu: true,
+      editable: enable_editable,
+    },
+/*
     {
       field: 'master_milestone',
       headerName: 'マスター',
@@ -194,22 +243,7 @@ export function TaskGrid(props:TaskGridProps) {
       disableColumnMenu: true,
       valueOptions: plan.getMasterPlanMileStoneValueOptions(),
     },
-    {
-      field: 'progress',
-      headerName: '進捗率',
-      width: 100,
-      editable: enable_editable,
-      type: 'singleSelect',
-      valueOptions: plan.getProgressValueOptions(),
-    },
-    {
-      field: 'memo',
-      headerName: '備考',
-      width: 150,
-      editable: enable_editable,
-      disableColumnMenu: true,
-      type: 'string'
-    },
+*/
     {
       field: 'actions',
       type: 'actions',
@@ -239,7 +273,11 @@ export function TaskGrid(props:TaskGridProps) {
             <GridActionsCellItem
               icon={<EditIcon />}
               label="Edit"
-              onClick={handleEditClick(id)}
+              onClick={()=>{
+                setTaskId(id as number);
+                handleOpen();
+              }}
+//              onClick={handleEditClick(id)}
               color="inherit"
             />,
             <GridActionsCellItem
@@ -279,7 +317,7 @@ export function TaskGrid(props:TaskGridProps) {
         '& .textPrimary': {
           color: 'text.primary',
         },
-        marginY: "10px" 
+        marginY: "0px" 
       }}
       >
       <StripedDataGrid
@@ -293,6 +331,11 @@ export function TaskGrid(props:TaskGridProps) {
         slots={slots}
         slotProps={slotProps}
         rowHeight={35}
+      />
+      <EditTaskModal 
+        open={open}
+        handleClose={handleClose} 
+        task_id={task_id}
       />
     </Box>
   );

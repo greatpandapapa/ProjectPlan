@@ -7,13 +7,13 @@ use Lib\JsonResponse;
 /**
  * JSONレスポンスを扱う
  */
-class SuccessResponse extends JsonResponse {
+class WarnningResponse extends JsonResponse {
     /**
      * コンストラクタ
      * @param $data 返すデータ
      */
-    public function __construct($data=null) {
-        $this->data = ["code"=>1];
+    public function __construct($data=null,$code=1) {
+        $this->data = ["code"=>$code];
         if ($data !== null) {
             $this->data["result"] = $data;
         }

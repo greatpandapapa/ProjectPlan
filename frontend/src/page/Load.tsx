@@ -62,7 +62,7 @@ function LoadJsonFile() {
 function ListServerFile() {
   const [loaded,setLoaded] = React.useState<boolean>(false);
   const [rows,setRows] = React.useState<IgetListRow[]>([]);
-  const [status,setStatus] = React.useState("Plan");
+  const [status,setStatus] = React.useState("plan");
 
   if (!loaded) {
     API.getList((response)=>{
@@ -92,6 +92,9 @@ function ListServerFile() {
               </TableCell>
               <TableCell align="left">{row.title}</TableCell>
               <TableCell align="left">{row.purpose}</TableCell>
+              <TableCell align="center">{row.create_date}</TableCell>
+              <TableCell align="center">{row.update_date}</TableCell>
+              <TableCell align="center">{row.rev}</TableCell>
               <TableCell align="left">{CPlan.getStatusName(row.status)}</TableCell>
               <TableCell align="center">
                 <IconButton aria-label="Delete" onClick={(e:React.MouseEvent)=>{handleDelete(row.name)}}>
@@ -127,6 +130,9 @@ function ListServerFile() {
               <TableCell component="th">名前</TableCell>
               <TableCell component="th">タイトル</TableCell>
               <TableCell component="th">目的</TableCell>
+              <TableCell component="th">作成日</TableCell>
+              <TableCell component="th">更新日</TableCell>
+              <TableCell component="th">Rev</TableCell>
               <TableCell component="th">状態</TableCell>
               <TableCell component="th"></TableCell>
             </TableRow>

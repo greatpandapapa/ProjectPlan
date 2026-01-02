@@ -1,8 +1,13 @@
-import * as React from 'react';
+import { ReactElement } from 'react';
 import { styled } from '@mui/material/styles';
+import MenuItem from '@mui/material/MenuItem';
 import { DataGrid, gridClasses,DataGridProps } from '@mui/x-data-grid';
 import TableCell from '@mui/material/TableCell';
+import {IValueOptions} from '../lib/typings';
 
+/**
+ * 背景色
+ */
 export function getBgColor(mode:string) {
   if (mode === "done") {
     return '#cccccc';
@@ -13,6 +18,9 @@ export function getBgColor(mode:string) {
   }
 }
 
+/**
+ * ストライプGrid
+ */
 const StripedGrid = styled(DataGrid)(({ theme }) => ({
   [`& .${gridClasses.row}.done`]: {
     backgroundColor: getBgColor('done'),
@@ -25,6 +33,9 @@ const StripedGrid = styled(DataGrid)(({ theme }) => ({
   }
 }));
   
+/**
+ * ストライプDataGrid
+ */
 export function StripedDataGrid(props:DataGridProps) {  
   return (
     <StripedGrid 
@@ -51,9 +62,23 @@ export function StripedDataGridByGroup(props:DataGridProps) {
   );
 }
 
+/**
+ * テーブルセルのパッディング極小板
+ */
 export const SlimTableCell = styled(TableCell)({
   padding: 0,
   margin: 4,
   paddingLeft: 8,
   paddingRight: 8,
 })
+
+/**
+ * MenuItemを生成する
+ */
+export function ValueOptionMenuItem(options: IValueOptions[]) {
+  let menus:ReactElement[]=[];
+  options.map((opt)=>{
+    menus.push(<MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>);
+  });
+  return menus;
+}

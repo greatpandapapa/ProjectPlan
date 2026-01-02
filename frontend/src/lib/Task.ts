@@ -11,7 +11,7 @@ import {
     IUpdateTask,
 } from "./typings";
 import ja from 'dayjs/locale/ja';
-import { format } from "date-fns";
+import { toDateString,isInvalidDate } from "./Common";
 import {CPlan} from "./Plan";
 
 /**
@@ -32,7 +32,7 @@ export class CTaskList {
     constructor(plan:CPlan, data: DataJson) {
         this.max_id = 0;
         for (let sc of data.task) {
-            this.task.push(new CTask(sc));
+            this.task.push(new CTask(plan,sc));
         }
         this.latest_id = 0;
         this.plan = plan;
@@ -82,96 +82,67 @@ export class CTaskList {
      */
     public getTaskRows():ITaskRows[] {
         let sc: CTask;
-        let rows: ITaskRows[] = [];
+        let rows: CTask[] = [];
 
         let no:number = 1;
         let grp_id: number = 0;
 
         const sorted_idx = this._getSortedIndex();
-        grp_id = 0;
         for(let i=0;i<sorted_idx.length;i++) {
             let idx:number = sorted_idx[i];
             sc = this.task[idx];
-            grp_id = sc.id;
-            rows.push(this._convTaskRow(sc,no++,grp_id));
+            sc.no = no++;
+            sc.grp_id = sc.id;
+            rows.push(sc);
         }
 
         // autoの時間計算（前）
         for(let i = 0; i < rows.length; i++) {
-            if (i !=0 && rows[i].start_date_auto == "pre") {
-                rows[i].start_date2 = this._getDateOfDuration(rows[i-1].end_date2,1,"add");
-                rows[i].grp_id = rows[i-1].grp_id;
-            }
-            if (rows[i].start_date != null) {
-                rows[i].end_date2 =  this._getDateOfDuration(rows[i].start_date2,rows[i].duration,"add1base",rows[i].type);
-            } 
+            rows[i].setDateNormal();
+            if (i > 0) rows[i].setDatePre(rows[i-1]);
         }
         // autoの時間計算(後)
         for(let i = rows.length-2; i > 0; i--) {
-            if (rows[i].start_date_auto == "post") {
-                let st:(Date) = rows[i+1].start_date2;
-                rows[i].grp_id = rows[i+1].grp_id;
-                if (st != null) {
-                    rows[i].end_date2 = this._getDateOfDuration(st,1,"sub");
-                }
-                if (rows[i].end_date2 != null) {
-                    rows[i].start_date2 = this._getDateOfDuration(rows[i].end_date2,rows[i].duration,"sub1base",rows[i].type);
-                }
-            }
+            rows[i].setDatePost(rows[i+1]);
         }
         // grp_idを1番から付け直す
         let pre_grp_id = rows[0].grp_id;
         grp_id = 1;
         rows[0].grp_id = grp_id;
-        for(let i = 1; i < rows.length; i++) {
-            if (pre_grp_id != rows[i].grp_id) {
-                grp_id++;
-                pre_grp_id = rows[i].grp_id;
+        // level=TOP/SUBの調整
+        let top_idx:null|number = null;
+        let top_cnt:number = 0;
+        let sub_idx:null|number = null;
+        let sub_cnt:number = 0;
+        for(let i = 0; i < rows.length; i++) {
+            if (i > 0) {
+                // grp_idをつける
+                if (pre_grp_id != rows[i].grp_id) {
+                    grp_id++;
+                    pre_grp_id = rows[i].grp_id;
+                }
+                rows[i].grp_id = grp_id;
             }
-            rows[i].grp_id = grp_id;
+            // TOP/SUBの更新
+            if (rows[i].level == 0) {
+                top_idx = i;
+                top_cnt = 0;
+                sub_idx = null;
+            } else if (rows[i].level == 1) {
+                sub_idx = i;
+                sub_cnt = 0;
+            } else {
+                if (top_idx !== null) {
+                    rows[top_idx].updateTopDate(rows[i],top_cnt);
+                    top_cnt++;
+                }
+                if (sub_idx !== null) {
+                    rows[sub_idx].updateTopDate(rows[i],sub_cnt);
+                    sub_cnt++;
+                }
+            }
         }
         return rows;
-    }
-
-    /**
-     * TaskPanelのDataGrid用のデータに変換する
-     */
-    private _convTaskRow( sc:CTask, no:number, grp_id:number):ITaskRows {
-//        const end = dayjs(new Date(sc.start_date)).add(sc.duration,"d").toDate();
-        const end = this._getDateOfDuration(new Date(sc.start_date),sc.duration,"add1base");
-        return {
-            ...sc,
-            no:no,
-            grp_id:grp_id,
-            start_date2: new Date(sc.start_date),
-            end_date2: end,
-            end_date: format(end, "yyyy-MM-dd")
-        };
-    }
-
-    /**
-     * durationを加算・原産した日付を取得する
-     */
-    private _getDateOfDuration(date:Date,duration:number,op:string,type:string=""):Date {
-        let d:number;
-        if (op == "add1base" || op == "sub1base") {
-            d = (duration > 0 ? duration - 1 : 0);
-        } else {
-            d = duration;
-        }
-        if (op == "add" || op == "add1base") {
-            if (type == "fulltime") {
-                return dayjs(date).add(d,"d").toDate();
-            } else {
-                return this.plan.getNextWorkday(date,d,"forward");
-            }
-        } else {
-            if (type == "fulltime") {
-                return dayjs(date).subtract(d,"d").toDate();
-            } else {
-                return this.plan.getNextWorkday(date,d,"back");
-            }
-        }
     }
 
     /**
@@ -275,18 +246,22 @@ export class CTaskList {
         let json:ITask = {
             "id": new_id,
             "pre_id": target_id,
-            "start_date_auto": "pre",
-            "start_date": this.plan.start_date,
+            "start_date_auto": "normal",
+            "start_date": this.plan.create_date,
+            "end_date": this.plan.create_date,
             "duration": 0,
-            "type": "action",
+            "type": "normal",
             "name": "",
             "master_milestone": null,
             "worker_id": null,
             "memo": "",
-            "level": null,
-            "progress": 0
+            "level": 99,
+            "progress": 0,
+            "ticket_no": "",
+            "link_type": "",
+            "link_id": null
         };
-        this.task.push(new CTask(json));
+        this.task.push(new CTask(this.plan, json));
         if (idx != null) {
             this.task[idx].pre_id = new_id;
         }
@@ -294,13 +269,55 @@ export class CTaskList {
     }
 
     /**
+     * タスクの情報を取得する
+     * 
+     * @param id 取得するID
+     */
+    public getTask(id:number):ITask {
+        const idx = this._getIndexById(id);
+        if (idx !== null) {
+            const task:ITask = {...this.task[idx]};
+            return task;
+        } else {
+            throw new Error("Internal Error");
+        }
+    }
+
+
+    /**
+     * タスクの情報を取得する
+     * 
+     * @param id 取得するID
+     */
+    public getTaskRow(id:number):ITaskRows {
+        const idx = this._getIndexById(id);
+        if (idx !== null) {
+            return this.task[idx];
+        } else {
+            throw new Error("Internal Error");
+        }
+    }
+
+    /**
      * スケジュールを追加・更新する
      * 
      * @param data スケジュール情報の配列
      */
-    public updateTask(data:object) {
+    public updateTask(data:ITaskRows) {
         let idx:number|null;
         let data2: ITask = data as ITask;
+
+        // invalid Date対策
+        if ( ! isInvalidDate(data.start_date2)) {
+            data.start_date = toDateString(data.start_date2);
+        } else {
+            data.start_date2 = new Date(data.start_date);
+        }
+        if ( ! isInvalidDate(data.end_date2)) {
+            data.end_date = toDateString(data.end_date2);
+        } else {
+            data.end_date2 = new Date(data.end_date);
+        }
 
         if (data2.pre_id != null) {
             idx = this._getIndexByPreId(data2.pre_id);
@@ -312,24 +329,9 @@ export class CTaskList {
         // データの登録・更新
         idx = this._getIndexById(data2.id);
         if (idx == null) {
-            this.task.push(new CTask(data2));
+            this.task.push(new CTask(this.plan,data2));
         } else {
             this.task[idx].update(data2);
-        }
-    }
-    /**
-     * タスクの情報を更新する（差分のみ）
-     */
-    public updateTaskDiff(data:IUpdateTask) {
-        let idx:number|null;
-
-        idx = this._getIndexById(data.id);
-        if (idx == null) {
-        } else {
-            if ('start_date' in data) data.start_date !== undefined && (this.task[idx].start_date = data.start_date);
-            if ('duration' in data) data.duration !== undefined && (this.task[idx].duration = data.duration);
-            if ('name' in data) data.name !== undefined && (this.task[idx].name = data.name);
-            if ('progress' in data) data.progress !== undefined && (this.task[idx].progress = data.progress);
         }
     }
 
@@ -738,6 +740,7 @@ export class CTaskList {
                 id: sc.id,
                 start_date_auto: sc.start_date_auto,
                 start_date: sc.start_date,
+                end_date: sc.end_date,
                 duration: sc.duration,
                 type: sc.type,
                 name: sc.name,
@@ -745,7 +748,10 @@ export class CTaskList {
                 worker_id: sc.worker_id,
                 pre_id: sc.pre_id,
                 level: sc.level,
-                progress: sc.progress
+                progress: sc.progress,
+                ticket_no: sc.ticket_no,
+                link_type: sc.link_type,
+                link_id: sc.link_id
             });
         }
         return rows;
@@ -755,11 +761,16 @@ export class CTaskList {
 /**
  * スケジュール
  */
-export class CTask {
+export class CTask implements ITask {
+    private plan: CPlan;
+    
     // プロパティ
     id: number;
     start_date_auto: string;
     start_date: string;
+    end_date: string;
+    start_date2: Date;
+    end_date2: Date;
     duration: number;
     type: string;
     name: string;
@@ -769,11 +780,22 @@ export class CTask {
     pre_id: number|null;
     level: number|null;
     progress: number;
+    ticket_no: string;
+    link_type: string;
+    link_id: null|number;
+    //
+    no: number;
+    grp_id: number;
 
-    constructor(data: ITask) {
+    constructor(plan:CPlan, data: ITask) {
+        this.plan = plan;
+
         this.id = data.id;
         this.start_date_auto = data.start_date_auto;
-        this.start_date = data.start_date;        
+        this.start_date = data.start_date;
+        this.end_date = data.end_date;
+        this.start_date2 = new Date(data.start_date);
+        this.end_date2 = new Date(data.end_date);
         this.duration = data.duration;
         this.type = data.type;
         this.name = data.name;
@@ -783,12 +805,24 @@ export class CTask {
         this.pre_id = data.pre_id;
         this.level = data.level;
         this.progress = data.progress;
+        this.ticket_no = data.ticket_no;
+        this.link_type = data.link_type;
+        this.link_id = data.link_id;
+
+        // 付加情報
+        this.no = 0;
+        this.grp_id = 0;
+
+        this.fixDate();
     }
 
     public update(data:ITask) {
         this.id = data.id;
         this.start_date_auto = data.start_date_auto;
         this.start_date = data.start_date;
+        this.end_date = data.end_date;
+        this.start_date2 = new Date(data.start_date);
+        this.end_date2 = new Date(data.end_date);
         this.duration = data.duration;
         this.type = data.type;
         this.name =data.name;
@@ -798,5 +832,112 @@ export class CTask {
         this.pre_id = data.pre_id;
         this.level = data.level;
         this.progress = data.progress;
+        this.ticket_no = data.ticket_no;
+        this.link_type = data.link_type;
+        this.link_id = data.link_id;
+
+        this.fixDate();
+    }
+
+    /**
+     * 日付の不整合の修正
+     */
+    private fixDate() {
+        // 日付が逆転していたら開始日と同じにする
+        if (this.start_date2.getTime() > this.end_date2.getTime()) {
+            this.end_date2 = new Date(this.start_date2.getTime());
+            this.end_date = toDateString(this.end_date2);
+        }
+    }
+
+    /**
+     * start_date_autoのnormal時のend_dateの調整
+     */
+    public setDateNormal() {
+        if (this.start_date_auto == "normal") {
+            this.end_date2 = this._getDateOfDuration(new Date(this.start_date),this.duration,"add1base");
+            this.end_date = toDateString(this.end_date2);
+        }
+    }
+
+    /**
+     * start_date_autoのpre時のstart_date/end_dateの調整
+     */
+    public setDatePre(pre_task:CTask) {
+        if (this.start_date_auto == "pre") {
+            if (pre_task.level == 99) {
+                this.start_date2 = this._getDateOfDuration(pre_task.end_date2,1,"add");
+                this.end_date2 =  this._getDateOfDuration(this.start_date2,this.duration,"add1base",this.type);
+                this.start_date = toDateString(this.start_date2);
+                this.end_date = toDateString(this.end_date2);
+                this.grp_id = pre_task.grp_id;
+            } else {
+                this.start_date_auto = "normal";
+            }
+        } 
+    }
+
+    /**
+     * start_date_autoのpost時のstart_date/end_dateの調整
+     */
+    public setDatePost(post_task:CTask) {
+        if (this.start_date_auto == "post") {
+            this.end_date2 = this._getDateOfDuration(post_task.start_date2,1,"sub");
+            this.start_date2 = this._getDateOfDuration(this.end_date2,this.duration,"sub1base",this.type);
+            this.start_date = toDateString(this.start_date2);
+            this.end_date = toDateString(this.end_date2);
+            this.grp_id = post_task.grp_id;
+        }
+    }
+
+    /**
+     * durationを加算・原産した日付を取得する
+     */
+    private _getDateOfDuration(date:Date,duration:number,op:string,type:string=""):Date {
+        let d:number;
+        if (op == "add1base" || op == "sub1base") {
+            d = (duration > 0 ? duration - 1 : 0);
+        } else {
+            d = duration;
+        }
+        if (op == "add" || op == "add1base") {
+            if (type == "fulltime") {
+                return dayjs(date).add(d,"d").toDate();
+            } else {
+                return this.plan.holidaies.getNextWorkday(date,d,"forward");
+            }
+        } else {
+            if (type == "fulltime") {
+                return dayjs(date).subtract(d,"d").toDate();
+            } else {
+                return this.plan.holidaies.getNextWorkday(date,d,"back");
+            }
+        }
+    }
+
+    /**
+     * Level=99以外なら、配下のtaskの範囲にstart_date/end_dateを書き換える
+     * 
+     * @param current_task 現在のタスク
+     * @param cnt 何番目のデータが
+     */
+    public updateTopDate(current_task:CTask,cnt:number) {
+        if (cnt == 0) { // 最初のデータなら
+            this.start_date = current_task.start_date;
+            this.end_date = current_task.end_date;
+            this.start_date2 = new Date(this.start_date);
+            this.end_date2 = new Date(this.end_date);
+            this.start_date_auto = "startend";
+            this.duration = 1;
+        } else {
+            if (this.start_date2 > current_task.start_date2) {
+                this.start_date = current_task.start_date;
+                this.start_date2 = new Date(this.start_date);
+            }
+            if (this.start_date2 < current_task.start_date2) {
+                this.end_date = current_task.end_date;
+                this.end_date2 = new Date(this.end_date);                            
+            }
+        }
     }
 }

@@ -22,6 +22,7 @@ export class API {
     static sendPostRequest(params:object,callback:(response_data:IPostResponse) => void) {
         return axios.post(URL,params)
         .then(function (response) {
+            // 0:Success,1-10:Warnning,11-:Error
             if (response.data.code > 10) {
                 throw new Error('サーバAPI呼び出しがエラー応答でした');
             }
@@ -40,7 +41,7 @@ export class API {
     }
 
     // データの保存
-    static saveData(name:string,data:object,callback:(response_data:object) => void) {
+    static saveData(name:string,data:object,callback:(response_data:IPostResponse) => void) {
         const params = {"controller":"Store","action":"save","name":name,"data":data};
         return API.sendPostRequest(params,callback);
     }
@@ -77,6 +78,8 @@ export interface IgetListRow {
     name:string,
     title:string;
     purpose:string;
-    deparure_date:string;                
     status:string;
+    create_date:string;                
+    update_date:string;                
+    rev:string;                
 }

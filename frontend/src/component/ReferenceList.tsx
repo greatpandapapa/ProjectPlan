@@ -7,7 +7,7 @@ import { plan } from '../lib/Plan';
 import Modal from '@mui/material/Modal';
 import AppBar from '@mui/material/AppBar';
 import { IReference } from '../lib/typings';
-import {useWindowSize} from '../lib/useWindowsSize';
+import {useWindowSize} from './useWindowsSize';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 
@@ -108,27 +108,26 @@ type ReferenceListProps = {
  * 参考情報
  */
 export function ReferenceList(props:ReferenceListProps) {
-    const initalrows = plan.getReferenceRows();
+    const initalrows = plan.references.getRows();
     const [rows,setRows] = useState(initalrows);
     const [reference,setreference] = useState(new CReference());
     const [open,setOpen] = useState(false);
 
     // データの保存
     const saveData = (data:IReference) => {
-        plan.updateReference(data);
-        setRows(plan.getReferenceRows());
+        plan.references.updateData(data);
+        setRows(plan.references.getRows());
         setOpen(false);
     };
     // 編集
     const editData = (id:number) => {
-        setreference(plan.getReference(id));
+        setreference(plan.references.getData(id));
         setOpen(true);
     };
     // 編集
     const delData = (id:number) => {
-        plan.delReference(id);
-        console.log(plan.getReferenceRows());
-        setRows(plan.getReferenceRows());
+        plan.references.delData(id);
+        setRows(plan.references.getRows());
         setOpen(false);
     };
 
@@ -144,7 +143,7 @@ export function ReferenceList(props:ReferenceListProps) {
                 参考サイト
                 {props.edit && (
                 <span onClick={()=>{
-                    setreference(plan.getNewReference());
+                    setreference(plan.references.getNewData());
                     setOpen(true);
                 }}>( + )</span>)}
             </Box>

@@ -9,7 +9,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import {useWindowSize} from '../lib/useWindowsSize';
+import {useWindowSize} from '../component/useWindowsSize';
 import { Typography } from '@mui/material';
 import {
   DndContext,
@@ -239,7 +239,7 @@ function SortPanel() {
   });
 
   return (
-    <Paper sx={{ width: '100%', overflow: 'hidden', marginY: "10px" }}>
+    <Paper sx={{ width: '100%', overflow: 'hidden', marginY: "0px" }}>
        {SortableTaskTable()}
     </Paper>
   );

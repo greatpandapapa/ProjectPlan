@@ -2,26 +2,33 @@
     "plan": {
         "title": "Template",
         "name": "template",
-        "start_date": "2024-7-12",
+        "rev": 0,
+        "create_date": "2024-7-12",
+        "update_date": "2024-7-12",
         "purpose": "",
-        "status": "Plan",
-        "masterplan": null
+        "status": "plan",
+        "masterplan": null,
+        "ticket_url": ""
     },
     "reference": [],
     "task": [
         {
             "id": 1,
-            "start_date_auto": "",
+            "start_date_auto": "normal",
             "start_date": "2024-7-12",
+            "end_date": "2024-7-17",
             "duration": 5,
-            "type": "plan",
+            "type": "normal",
             "name": "Task1",
             "master_milestone": null,
             "worker_id": null,
             "memo": "",
             "pre_id": null,
             "level": null,
-            "progress":0
+            "progress":0,
+            "ticket_no": "",
+            "link_type": "",
+            "link_id": null
         }
     ],
     "worker": [],

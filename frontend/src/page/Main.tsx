@@ -7,7 +7,6 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import PlanPanel from './PlanPanel';
 import {TaskEditPanel} from './TaskPanel';
-import ReactGanttPanel from './ReactGanttPanel';
 import SortPanel from './SortPanel';
 import SavePanel from './SavePanel';
 import WorkerPanel from './WorkerPanel';
@@ -69,14 +68,14 @@ function Main() {
         <MyAppBar></MyAppBar>
         <TabContext value={value}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <TabList onChange={handleChange} aria-label="lab API tabs example">
+            <TabList onChange={handleChange} aria-label="Main Tabs">
               <Tab icon={<CardTravelIcon />} iconPosition="start" label={convMobileText("計画")} value="plan" sx={{...tag_style, bgcolor: '#e0ffff'}} />
-              <Tab icon={<CalendarMonthIcon />} iconPosition="start" label={convMobileText("タスク")} value="taskedit"  sx={{...tag_style, bgcolor: '#f0f8ff'}}/>
-              <Tab icon={<TourIcon />} iconPosition="start" label={convMobileText("作業者")} value="worker"  sx={{...tag_style, bgcolor: '#ffffe0'}}/>
-              <Tab icon={<GradingIcon />} iconPosition="start" label={convMobileText("ガント")} value="publish"  sx={{...tag_style, bgcolor: '#fce1fc'}}/>
-              <Tab icon={<ChecklistRtlIcon />} iconPosition="start" label={convMobileText("一覧")} value="view"  sx={{...tag_style, bgcolor: '#e0ffff'}}/>
+              <Tab icon={<CalendarMonthIcon />} iconPosition="start" label={convMobileText("タスク編集")} value="taskedit"  sx={{...tag_style, bgcolor: '#f0f8ff'}}/>
+              <Tab icon={<ChecklistRtlIcon />} iconPosition="start" label={convMobileText("タスク一覧")} value="taskview"  sx={{...tag_style, bgcolor: '#99FFFF'}}/>
+              <Tab icon={<GradingIcon />} iconPosition="start" label={convMobileText("ガントチャート")} value="ganttchart"  sx={{...tag_style, bgcolor: '#fce1fc'}}/>
               <Tab icon={<FlagIcon />} iconPosition="start" label={convMobileText("マスタ計画")} value="master"  sx={{...tag_style, bgcolor: '#CCFFCC'}}/>
               <Tab icon={<SwapVertIcon />} iconPosition="start" label={convMobileText("順序変更")} value="tasksort"  sx={{...tag_style, bgcolor: '#e6e6fa'}}/>
+              <Tab icon={<TourIcon />} iconPosition="start" label={convMobileText("作業者")} value="worker"  sx={{...tag_style, bgcolor: '#FFDEAD'}}/>
               <Tab icon={<TourIcon />} iconPosition="start" label={convMobileText("休日設定")} value="holiday"  sx={{...tag_style, bgcolor: '#ffffe0'}}/>
               <Tab icon={<SaveIcon />} iconPosition="start" label={convMobileText("保存")} value="save"  sx={{...tag_style, bgcolor: '#f8fbf8'}}/>
             </TabList>
@@ -91,29 +90,29 @@ function Main() {
               <TaskEditPanel></TaskEditPanel>
             </Box>
           </TabPanel>
-          <TabPanel value="tasksort" sx={{bgcolor: '#e6e6fa',padding: panel_padding}}>
-            <Box sx={{bgcolor: '#ffffff'}}>
-              <SortPanel></SortPanel>
-            </Box>
-          </TabPanel>
-          <TabPanel value="worker"  sx={{bgcolor: '#ffffe0',padding: panel_padding}}>
-            <Box sx={{bgcolor: '#ffffff'}}>
-              <WorkerPanel></WorkerPanel>
-            </Box>
-          </TabPanel>
-          <TabPanel value="publish" sx={{bgcolor: '#fce1fc',padding: panel_padding}}>
-            <Box sx={{bgcolor: '#ffffff'}}>
-              <GppGanttPanel></GppGanttPanel>
-            </Box>
-          </TabPanel>
-          <TabPanel value="view" sx={{bgcolor: '#e0ffff',padding: panel_padding}}>
+          <TabPanel value="taskview" sx={{bgcolor: '#99FFFF',padding: panel_padding}}>
             <Box sx={{bgcolor: '#ffffff'}}>
               <ViewPanel></ViewPanel>
+            </Box>
+          </TabPanel>
+          <TabPanel value="ganttchart" sx={{bgcolor: '#fce1fc',padding: panel_padding}}>
+            <Box sx={{bgcolor: '#ffffff'}}>
+              <GppGanttPanel></GppGanttPanel>
             </Box>
           </TabPanel>
           <TabPanel value="master" sx={{bgcolor: '#CCFFCC',padding: panel_padding}}>
             <Box sx={{bgcolor: '#ffffff'}}>
               <MasterViewPanel></MasterViewPanel>
+            </Box>
+          </TabPanel>
+          <TabPanel value="tasksort" sx={{bgcolor: '#e6e6fa',padding: panel_padding}}>
+            <Box sx={{bgcolor: '#ffffff'}}>
+              <SortPanel></SortPanel>
+            </Box>
+          </TabPanel>
+          <TabPanel value="worker"  sx={{bgcolor: '#FFDEAD',padding: panel_padding}}>
+            <Box sx={{bgcolor: '#ffffff'}}>
+              <WorkerPanel></WorkerPanel>
             </Box>
           </TabPanel>
           <TabPanel value="holiday" sx={{bgcolor: '#ffffe0',padding: panel_padding}}>

@@ -7,7 +7,7 @@ import {
     CBaseList
 } from "./BaseList";
 import {CPlan} from "./Plan";
-import { format } from "date-fns";
+import { toDateString } from "./Common";
 import dayjs, { Dayjs } from 'dayjs';
 
 /**
@@ -28,6 +28,14 @@ export class CHolidayList extends CBaseList<CHoliday> {
         }
     }
 
+    /**
+     * 新規データを生成する
+     */
+    public getNew(date:Date) {
+        this._checkMaxLatestId();
+        return this._factoryObject({"id":this.max_id+1,date:date});
+    }
+    
     /**
      * 空オブジェクトの生成（継承先でオーバーライトする）
      */
@@ -77,7 +85,7 @@ export class CHolidayList extends CBaseList<CHoliday> {
     public getDays():string[] {
         let days:string[] = [];
         this.list.map((dd) => {
-            days.push(format(dd.date,"yyyy-MM-dd"));
+            days.push(toDateString(dd.date));
 
         })
         return days;
@@ -102,7 +110,7 @@ export class CHolidayList extends CBaseList<CHoliday> {
             nextday = dayjs(nextday).add(unit,"d").toDate();
             if (nextday.getDay() === 0 || nextday.getDay() === 6) {
                 i--;
-            } else if (holidaies.includes(format(nextday, "yyyy-MM-dd"))) {
+            } else if (holidaies.includes(toDateString(nextday))) {
                 i--;
             }
         }

@@ -4,6 +4,7 @@ namespace Controller;
 
 use Lib\Controller;
 use Lib\SuccessResponse;
+use Lib\WarnningResponse;
 use Lib\CommonControllerTrait;
 use lib\Config;
 use Lib\JsonResponse;
@@ -20,10 +21,19 @@ class StoreController extends Controller {
         if ($name != "_template") {
             $data = $this->getRequestValue("data");
 
-            $enc_json = json_encode($data,JSON_PRETTY_PRINT);
-
             $data_path = Config::getDataPath();
             $filename = $data_path."/".$name.".json";
+            // 上書き防止のRevチェック
+            if (file_exists($filename)) {
+                $json = file_get_contents($filename);
+                $cur_data = json_decode($json,true);
+                if ($cur_data["plan"]["rev"] != $data["plan"]["rev"]) {
+                    return new WarnningResponse(["mesg"=>"ファイルが他のユーザにより更新されています"],2);
+                }
+                $data["plan"]["rev"]++;
+            }
+            // ファイル保存
+            $enc_json = json_encode($data,JSON_PRETTY_PRINT);
             file_put_contents($filename,$enc_json);
             return new SuccessResponse(); 
         }
@@ -36,10 +46,9 @@ class StoreController extends Controller {
         $data_path = Config::getDataPath();
         $filename = $data_path."/".$name.".json";
         if (! file_exists($filename)) {
-            return new WarnningResponse(["mesg"=>"ファイルが存在しません"]);
+            return new WarnningResponse(["mesg"=>"ファイルが存在しません"],1);
         } else {
             $json = file_get_contents($filename);
-
             $data = json_decode($json);
             $resp = ["name"=>$name,"data"=>$data];
             return new SuccessResponse($resp);     
@@ -55,15 +64,14 @@ class StoreController extends Controller {
             $json = file_get_contents($filename);
             $data = json_decode($json);
             $info = pathinfo($filename);
-            if (isset($data->plan->status)) {
-                $status = $data->plan->status;
-            } else {
-                $status = "Plan";
-            }
             $list[] = [ "name"=>$info["filename"],
                         "title"=>$data->plan->title,
                         "purpose"=>$data->plan->purpose,
-                        "status"=>$status];
+                        "status"=>$data->plan->status,
+                        "create_date"=>$data->plan->create_date,
+                        "update_date"=>$data->plan->update_date,
+                        "rev"=>$data->plan->rev,
+                    ];
         }
         return new SuccessResponse($list);     
     }

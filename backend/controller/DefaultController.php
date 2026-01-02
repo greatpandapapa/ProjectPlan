@@ -15,8 +15,8 @@ class DefaultController extends Controller {
     public function index() {
         $body = [];
         $body[] = "<div>";
-        $body[] = "<h3>Travel Plan</h3>";
-        $body[] = "[<a href=\"../build/\">Main Menu</a>]";
+        $body[] = "<h3>Project Plan</h3>";
+        $body[] = "[<a href=\"../public/\">Main Menu</a>]";
         $body[] = "</div>";
         return new HtmlResponse($body);
     }    
