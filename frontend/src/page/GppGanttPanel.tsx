@@ -3,6 +3,7 @@ import Paper from '@mui/material/Paper';
 import {GppGanttChart,IGppGanttConfig,GppDefaultConfig,IGppGanttData,IGppGanttColumns} from "../component/GppGanttChart";
 import {useState} from 'react';
 import {EditTaskModal} from './TaskModal';
+import {useWindowSize} from "../component/useWindowsSize";
 
 function GppGanttPanel() {
     // 編集モーダル用
@@ -43,9 +44,14 @@ function GppGanttPanel() {
         }
     }
 
+    // ガントチャートの高さと幅
+    const size = useWindowSize();
+    const width = size[0];
+    const height = size[1]-160;
+
     return (
         <Paper sx={{ width: '100%', overflow: 'hidden', margin: "1px" }}>
-            <GppGanttChart config={config} columns={columns} data={data} links={links} onClickTask={clickTask}/>
+            <GppGanttChart width={width} height={height} config={config} columns={columns} data={data} links={links} onClickTask={clickTask}/>
             <EditTaskModal 
                 open={open}
                 handleClose={handleClose} 

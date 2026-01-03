@@ -7,7 +7,7 @@
  * @author GreatPandaPapa
  * @homepage https://github.com/greatpandapapa
  */
-import {useState,memo,ReactNode,useRef,createContext} from 'react';
+import {useState,memo,ReactNode,useRef,createContext,useContext} from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -19,7 +19,6 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { styled } from '@mui/material/styles';
 import { format } from "date-fns";
-import {useWindowSize} from "./useWindowsSize";
 
 /**
  * 月末のDateオブジェクトを取得
@@ -36,7 +35,7 @@ function getEndOfMonthDate(date:Date):Date {
 }
 
 
-// ガントチャートの列設定
+// ラベルの表示位置
 const label_align_list = {
     center: "center",
     left: "left",
@@ -48,7 +47,7 @@ const cal_unit_list = {
     week: "week",
     month: "month"
 } as const;
-// ガントチャートの列設定
+// ガントチャートの幅
 const cell_width_list = {
     standard: "standard",
     narrow: "narrow",
@@ -98,7 +97,7 @@ export interface IGppGanttConfig {
     lang_mesg_narrow: string;
 }
 
-// デフォルトのconfigを取得する
+// デフォルトのデフォルト値
 export function GppDefaultConfig():IGppGanttConfig {
     return {
         start: null,
@@ -145,12 +144,13 @@ export function GppDefaultConfig():IGppGanttConfig {
     };
 }
 
-// ガントチャートの列設定
+// テーブル列のAlign
 const align_list = {
     center: "center",
     left: "left",
     right: "right"
 } as const;
+// ガントチャートのテーブル部のカラム設定のデータ定義
 export interface IGppGanttColumns {
     align: typeof align_list[keyof typeof align_list];  // alignに指定できる文字列を限定
     width: number;
@@ -170,12 +170,14 @@ export interface IGppGanttData {
     bar_color?: string;
     bar_stroke_color?: string;
 }
+// リンクタイプ
 const link_type_list = {
     s2s: "s2s",
     s2e: "s2e",
     e2s: "e2s",
     e2e: "e2e",
 } as const;
+// リンクのデータ定義
 export interface IGppGanttLink {
     id: number;
     source: number;
@@ -983,6 +985,8 @@ function GppSvgGanttChartLine(x1:number,y1:number,x2:number,y2:number,stroke:str
 
 // Propsの型
 export type GppGanttChartProps = {
+    width: number;
+    height: number;
     config: IGppGanttConfig;
     columns: IGppGanttColumns[],
     data: IGppGanttData[],
@@ -999,7 +1003,7 @@ type GppGanttChartInternalProps = {
 type SelectScaleProps = {
   dm: CGppGanttDataManager;
   unit: string;
-  width: string;
+  width_class: string;
   setUnit: (unit:string) => void;
   setWidth: (width:string) => void;
 }
@@ -1008,8 +1012,8 @@ type SelectScaleProps = {
 function SelectScale(props:SelectScaleProps) {
     return (
         <Grid container spacing={1} justifyContent="flex-end" sx={{width:1}}>
-            <Button variant={props.width=="standard"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setWidth("standard")}}>{props.dm.config.lang_mesg_standard}</Button>
-            <Button variant={props.width=="narrow"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setWidth("narrow")}}>{props.dm.config.lang_mesg_narrow}</Button>
+            <Button variant={props.width_class=="standard"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setWidth("standard")}}>{props.dm.config.lang_mesg_standard}</Button>
+            <Button variant={props.width_class=="narrow"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setWidth("narrow")}}>{props.dm.config.lang_mesg_narrow}</Button>
             <Button variant={props.unit=="month"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("month")}}>{props.dm.config.lang_mesg_month}</Button>
             <Button variant={props.unit=="week"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("week")}}>{props.dm.config.lang_mesg_week}</Button>
             <Button variant={props.unit=="day"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("day")}}>{props.dm.config.lang_mesg_day}</Button>
@@ -1036,8 +1040,7 @@ export function GppGanttChart(props:GppGanttChartProps) {
     let dm:CGppGanttDataManager = new CGppGanttDataManager(props.config,props.columns,props.data,props.links);
     dm.setup();
   
-    const size = useWindowSize();
-    const cal_width = size[0]-350;
+    const cal_width = props.width-350;
 
     // スクロール連動
     const handleScroll = (left:boolean) => {
@@ -1052,15 +1055,15 @@ export function GppGanttChart(props:GppGanttChartProps) {
   
     return (
         <Stack direction={"column"} spacing={0.5}>
-            <SelectScale dm={dm} unit={unit} setUnit={setUnit} width={width_class} setWidth={setWidthClass}/>
+            <SelectScale dm={dm} unit={unit} setUnit={setUnit} width_class={width_class} setWidth={setWidthClass}/>
             <Stack direction={"row"} spacing={0.5}>
-                <Box ref={tableEl} onScroll={()=>{handleScroll(true)}} sx={{width:400,overflowY:'auto',overflowX:"scroll",height:size[1]-160}}>
+                <Box ref={tableEl} onScroll={()=>{handleScroll(true)}} sx={{width:400,overflowY:'auto',overflowX:"scroll",height:props.height}}>
                     <Stack direction={"column"} spacing={0}>
                         <GppGanttTableHeader dm={dm}/>
                         <GppGanttTableBody dm={dm} onClickTask={props.onClickTask} />
                     </Stack>
                 </Box>
-                <Box ref={calendarEl} onScroll={()=>{handleScroll(false)}} sx={{width:cal_width ,overflow: 'auto',height:size[1]-160}} >
+                <Box ref={calendarEl} onScroll={()=>{handleScroll(false)}} sx={{width:cal_width ,overflow: 'auto',height:props.height}} >
                     <Stack direction={"column"} spacing={0}>
                         <GppSvgGanttChartHeader  dm={dm}/>
                         <GppSvgGanttChartBody  dm={dm}/>

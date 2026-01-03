@@ -79,7 +79,7 @@ export interface ITaskRows extends ITask {
 export interface ITaskTable  extends ITaskRows {
     level_label: string,
     type_label: string,
-    start_time_auto_label: string,
+    start_date_auto_label: string,
     worker: IWorker,
     master_milestone_label: string,
     ticket_link: null|URL

@@ -216,7 +216,7 @@ export class CPlan {
             options  = (CPlan.type_options as unknown[]) as IValueOptions[];
         } else if (mode == "worker_type") {
             options  = (CPlan.worker_type_options as unknown[]) as IValueOptions[];
-        } else if (mode == "start_time_auto") {
+        } else if (mode == "start_date_auto") {
             options  = (CPlan.auto_options as unknown[]) as IValueOptions[];
         } else if (mode == "status") {
             options  = (CPlan.status_options as unknown[]) as IValueOptions[];
@@ -306,13 +306,13 @@ export class CPlan {
     }
 
     /**
-     * start_time_autoのValueOptions
+     * start_date_autoのValueOptions
      */
     public getAutoValueOptions():IValueOptions[] {
         return CPlan.auto_options;
     }
     public getAutoName(key:string):string {
-        return CPlan.getOptionLabel(key,"start_time_auto");
+        return CPlan.getOptionLabel(key,"start_date_auto");
     }
 
     /**
@@ -482,7 +482,7 @@ export class CPlan {
                   worker: this.workers.getNewTableRow(),
                   level_label: this.getLevelName(row.level),
                   type_label: this.getTypeName(row.type),
-                  start_time_auto_label: this.getAutoName(row.start_date_auto),
+                  start_date_auto_label: this.getAutoName(row.start_date_auto),
                   master_milestone_label: this.getMasterPlanMilestoneName(row.master_milestone),
                   ticket_link: this.getTicketLink(row.ticket_no)
                 };
@@ -494,6 +494,32 @@ export class CPlan {
         let filter = new TableFilter(rows);
 
         return filter.do();
+    }
+
+    /**
+     * CSVファイルのデータを取得する
+     */
+    public getCSVData():string {
+        let csv:string = "id,start_date_auto,start_date,end_date,duration,type,name,master_milestone,worker,memo,level,progress,ticket_no,link_type,link_id\r\n";
+        this.getTableRows().map((row)=>{
+            csv += row.id+",";
+            csv += row.start_date_auto+",";
+            csv += row.start_date+",";
+            csv += row.end_date+",";
+            csv += row.duration+",";
+            csv += row.type+",";
+            csv += row.name+",";
+            csv += ((row.master_milestone === null || row.master_milestone === undefined)?"":row.master_milestone_label)+",";
+            csv += ((row.worker_id === null || row.worker_id === undefined)?"":row.worker.name)+",";
+            csv += ((row.memo === null || row.memo === undefined)?"":row.memo)+",";
+            csv += row.level+",";
+            csv += row.progress+",";
+            csv += ((row.ticket_no === null || row.ticket_no === undefined)?"":row.ticket_no)+",";
+            csv += ((row.link_type === null || row.link_type === undefined)?"":row.link_type)+",";
+            csv += ((row.link_id === null || row.link_id === undefined)?"":row.link_id);
+            csv += "\r\n";
+        });
+        return csv;
     }
 
     /**

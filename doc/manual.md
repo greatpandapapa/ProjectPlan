@@ -159,7 +159,7 @@
   - 補足説明など
 
 ### タスク一覧
-![taskview](./img/pm_taslvoew.png)
+![taskview](./img/pm_taskview.png)
 - タスク定義の情報を一覧表示する
 - 編集アイコン（ペンのアイコン）をクリックすると、編集モーダルも表示され編集できる
 

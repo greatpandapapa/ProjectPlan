@@ -30,12 +30,20 @@ class StoreController extends Controller {
                 if ($cur_data["plan"]["rev"] != $data["plan"]["rev"]) {
                     return new WarnningResponse(["mesg"=>"ファイルが他のユーザにより更新されています"],2);
                 }
+                // 古いバイルをバックアップ
+                $backup_path = Config::getBackupPath();
+                $backupname = $backup_path."/".$name.".json".".".$data["plan"]["rev"];
+                rename($filename,$backupname);
+                // Revをインクリメント
                 $data["plan"]["rev"]++;
             }
+
             // ファイル保存
             $enc_json = json_encode($data,JSON_PRETTY_PRINT);
             file_put_contents($filename,$enc_json);
             return new SuccessResponse(); 
+        } else {
+            return new WarnningResponse(["mesg"=>"_templateというファイル名では保存できません"],2);
         }
         return new SuccessResponse();     
     }

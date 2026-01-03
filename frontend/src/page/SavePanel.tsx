@@ -26,17 +26,30 @@ function SavePanel() {
         });      
     };
 
-    // ダウンロード
-    const filename = plan.name + `.json`;
+    // JSONダウンロード
+    const json_filename = plan.name + `.json`;
     const blobData = new Blob([JSON.stringify(plan.getSaveData())], {
       type: 'text/json',
     })
     const jsonURL = URL.createObjectURL(blobData)
     
-    const ExportLink = () => {
-        return (<a href={jsonURL} download={filename}>JSONファイルをDownload</a>);
+    const JsonDownloadLink = () => {
+        return (<a href={jsonURL} download={json_filename}>[JSONファイルをDownload]</a>);
     }
  
+    // JSONダウンロード
+    const csv_filename = plan.name + `.csv`;
+    const bom = new Uint8Array([0xef, 0xbb, 0xbf]);
+    const csv = plan.getCSVData();
+    const CSVBlobData = new Blob([bom, csv], {
+      type: 'text/csv',
+    })
+    const csvURL = URL.createObjectURL(CSVBlobData)
+    
+    const CSVDownloadLink = () => {
+        return (<a href={csvURL} download={csv_filename}>[CSVファイルをDownload]</a>);
+    }
+
     return (
     <Grid container>
         <Typography>
@@ -47,7 +60,8 @@ function SavePanel() {
                 {saved == "error" && resp_mesg}
             </Box>
             <Box sx={{ p: 2, display: 'flex',justifyContent: 'flex-start' }}>
-              <ExportLink/>
+              <JsonDownloadLink/>&nbsp;
+              <CSVDownloadLink/>
             </Box>
             </Box>
         </Typography>

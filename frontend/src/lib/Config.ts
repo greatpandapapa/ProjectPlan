@@ -2,7 +2,7 @@ import { isMobile } from "react-device-detect";
 //const isMobile = true;
 
 export const config = {
-    version: "1.00",
+    version: "1.01",
     isMobile: isMobile,
     icon_hight: isMobile ? "32px":"48px",
     datagrid_rowHight: isMobile ? 25:35
