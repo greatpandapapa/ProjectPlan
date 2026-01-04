@@ -7,7 +7,7 @@ namespace Lib;
  */
 class Config {
     // システムのROOTを設定
-    private static $rootpath = "c:/workspace/projectplan/backend";
+    private static $rootpath = "c:/home/app/backend";
     public static function setRootPath($path) {
         self::$rootpath = $path;
     }

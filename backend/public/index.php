@@ -12,7 +12,7 @@ require('../lib/bootstrap.php');
 $app_root=__DIR__."/..";
 
 // .env
-$dotenv = Dotenv\Dotenv::createImmutable($app_root);
+$dotenv = Dotenv\Dotenv::createImmutable($app_root."/");
 $dotenv->load();
 
 use Monolog\Logger;
@@ -25,7 +25,7 @@ use Lib\Recoder;
 // システムルートを設定
 config::setRootPath($app_root);
 
-$log = new Logger('projectplan');
+$log = new Logger($_ENV["APP_NAME"]);
 $log->pushHandler(new StreamHandler($app_root.'/log/'.date("Ymd").'.log'));
 
 $controller = "Default";

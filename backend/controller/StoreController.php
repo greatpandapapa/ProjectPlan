@@ -27,15 +27,18 @@ class StoreController extends Controller {
             if (file_exists($filename)) {
                 $json = file_get_contents($filename);
                 $cur_data = json_decode($json,true);
-                if ($cur_data["plan"]["rev"] != $data["plan"]["rev"]) {
-                    return new WarnningResponse(["mesg"=>"ファイルが他のユーザにより更新されています"],2);
+                // サーバ側のファイルにRevがない場合はチェックしない（古いデータとの互換性のため）
+                if (isset($cur_data["plan"]["rev"])) {
+                    if ($cur_data["plan"]["rev"] != $data["plan"]["rev"]) {
+                        return new WarnningResponse(["mesg"=>"ファイルが他のユーザにより更新されています"],2);
+                    }
+                    // 古いバイルをバックアップ
+                    $backup_path = Config::getBackupPath();
+                    $backupname = $backup_path."/".$name.".json".".".$data["plan"]["rev"];
+                    rename($filename,$backupname);
+                    // Revをインクリメント
+                    $data["plan"]["rev"]++;
                 }
-                // 古いバイルをバックアップ
-                $backup_path = Config::getBackupPath();
-                $backupname = $backup_path."/".$name.".json".".".$data["plan"]["rev"];
-                rename($filename,$backupname);
-                // Revをインクリメント
-                $data["plan"]["rev"]++;
             }
 
             // ファイル保存
@@ -75,10 +78,10 @@ class StoreController extends Controller {
             $list[] = [ "name"=>$info["filename"],
                         "title"=>$data->plan->title,
                         "purpose"=>$data->plan->purpose,
-                        "status"=>$data->plan->status,
-                        "create_date"=>$data->plan->create_date,
-                        "update_date"=>$data->plan->update_date,
-                        "rev"=>$data->plan->rev,
+                        "status"=>(isset($data->plan->status)?$data->plan->status:""),
+                        "create_date"=>(isset($data->plan->create_date)?$data->plan->create_date:""),
+                        "update_date"=>(isset($data->plan->update_date)?$data->plan->update_date:""),
+                        "rev"=>(isset($data->plan->rev)?$data->plan->rev:0),
                     ];
         }
         return new SuccessResponse($list);     
