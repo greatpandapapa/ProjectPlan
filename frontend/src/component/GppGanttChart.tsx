@@ -1029,17 +1029,28 @@ export function GppGanttChart(props:GppGanttChartProps) {
     const tableEl = useRef<HTMLDivElement>(null);
     const calendarEl = useRef<HTMLDivElement>(null);
 
-    // 列の表示単位
-    if (unit == "day" || unit == "week" || unit == "month") {
-        props.config.calendar_unit = unit;
-    }
-    // 列幅
-    if (width_class == "standard" || width_class == "narrow") {
-        props.config.cell_width_class = width_class;
-    }
+    // データマネージャ
     let dm:CGppGanttDataManager = new CGppGanttDataManager(props.config,props.columns,props.data,props.links);
+
+    // 列の表示単位
+    function changeUnit(unit:string) {
+        if (unit == "day" || unit == "week" || unit == "month") {
+            dm.config.calendar_unit = unit;
+            dm.setup();
+            setUnit(unit);
+        }
+    }
+    
+    // 列幅
+    function changeWidthClass(width_class:string) {
+        if (width_class == "standard" || width_class == "narrow") {
+            dm.config.cell_width_class = width_class;
+            dm.setup();
+            setWidthClass(width_class);
+        }
+    }
+
     dm.setup();
-  
     const cal_width = props.width-350;
 
     // スクロール連動
@@ -1055,7 +1066,7 @@ export function GppGanttChart(props:GppGanttChartProps) {
   
     return (
         <Stack direction={"column"} spacing={0.5}>
-            <SelectScale dm={dm} unit={unit} setUnit={setUnit} width_class={width_class} setWidth={setWidthClass}/>
+            <SelectScale dm={dm} unit={unit} setUnit={changeUnit} width_class={width_class} setWidth={changeWidthClass}/>
             <Stack direction={"row"} spacing={0.5}>
                 <Box ref={tableEl} onScroll={()=>{handleScroll(true)}} sx={{width:400,overflowY:'auto',overflowX:"scroll",height:props.height}}>
                     <Stack direction={"column"} spacing={0}>

@@ -13,6 +13,7 @@ import {
 import ja from 'dayjs/locale/ja';
 import { toDateString,isInvalidDate } from "./Common";
 import {CPlan} from "./Plan";
+import { CHolidayList } from './Holiday';
 
 /**
  * スケジュールのリストを管理するクラス
@@ -330,9 +331,11 @@ export class CTaskList {
         idx = this._getIndexById(data2.id);
         if (idx == null) {
             this.task.push(new CTask(this.plan,data2));
+            idx = this.task.length - 1;
         } else {
             this.task[idx].update(data2);
         }
+        this.task[idx].setDateStartEnd(this.plan.holidaies);
     }
 
     /**
@@ -847,6 +850,15 @@ export class CTask implements ITask {
         if (this.start_date2.getTime() > this.end_date2.getTime()) {
             this.end_date2 = new Date(this.start_date2.getTime());
             this.end_date = toDateString(this.end_date2);
+        }
+    }
+
+    /**
+     * start_date_autoのstartend時のdurationの調整 
+     */
+    public setDateStartEnd(holidaies:CHolidayList) {
+        if (this.start_date_auto == "startend") {
+            this.duration = holidaies.getDuration(this.start_date2,this.end_date2,this.type);
         }
     }
 

@@ -116,6 +116,28 @@ export class CHolidayList extends CBaseList<CHoliday> {
         }
         return nextday;
     }
+
+    /**
+     * start_dateとend_dateの日数差を計算する
+     */
+    public getDuration(start_date:Date,end_date:Date,type:string):number {
+        let days = Math.floor((end_date.getTime() - start_date.getTime()) / 86400000);
+        if (type == "fulltime") {
+            return days;
+        } else {
+            const holidaies:string[] = this.getDays();
+            let nextday:Date = start_date;
+            for(let i:number = 0; i < days;i++) {
+                nextday = dayjs(nextday).add(1,"d").toDate();
+                if (nextday.getDay() === 0 || nextday.getDay() === 6) {
+                    days--;
+                } else if (holidaies.includes(toDateString(nextday))) {
+                    days--;
+                }
+            }
+            return days;
+        }
+    }
 }
 
 /**
