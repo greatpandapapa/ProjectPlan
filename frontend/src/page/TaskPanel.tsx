@@ -101,14 +101,18 @@ export function TaskGrid(props:TaskGridProps) {
 
   // データ更新
   const processRowUpdate = (newRow: GridRowModel) => {
-    const updatedRow = { ...newRow, isNew: false };
-    setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
-
     plan.tasks.updateTask(newRow as ITaskRows)
     const initialRows: GridRowsProp = plan.tasks.getTaskRows(); 
     setRows(initialRows);
 
-    return updatedRow;
+    let i=0;
+    for(i=0;i<initialRows.length;i++) {
+      if (initialRows[i].id === newRow.id) {
+        break;
+      }
+    }
+    // DataGridの編集対象業の更新
+    return { ...initialRows[i], isNew: false };
   };
 
   const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) => {
