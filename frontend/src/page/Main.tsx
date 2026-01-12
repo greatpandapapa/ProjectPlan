@@ -48,6 +48,10 @@ function Main() {
       const data = state["data"];
       plan.load((data as DataJson));
       setLoaded(true);
+    } else if (from == "csv") {
+      const csv = state["data"];
+      plan.loadCSVData((csv as string[][]));
+      setLoaded(true);
     } else if (from == "server") {
       let name:string = state["name"];
       API.loadData(name,(response)=>{

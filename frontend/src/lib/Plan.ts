@@ -16,7 +16,7 @@ import {CWorkerList,CWorker} from "./Worker";
 import {CReferenceList} from "./Reference";
 import {CHolidayList} from "./Holiday";
 import {API,ILoadDataResponse} from "../lib/Api";
-import { toDateString,toDateTimeString } from "./Common";
+import { toDateString,toDateTimeString,getTodayDateString,getTodayDateTimeString } from "./Common";
 // react-gantt
 import {ITask,ILink} from "@svar-ui/react-gantt"; 
 // GppGantt
@@ -116,10 +116,10 @@ export class CPlan {
     public loadTemplateData() {
         const data = jsondata;
         // 日付を今日の日付にする
-        data.plan.create_date = toDateTimeString(new Date());
-        data.plan.update_date = toDateTimeString(new Date());
-        data.task[0].start_date = toDateString(new Date());;
-        data.task[0].end_date = toDateString(new Date());;
+        data.plan.create_date = getTodayDateTimeString();
+        data.plan.update_date = getTodayDateTimeString();
+        data.task[0].start_date = getTodayDateString();
+        data.task[0].end_date = getTodayDateString();
 
         this.title = data.plan.title;
         this.name = data.plan.name;
@@ -138,6 +138,14 @@ export class CPlan {
 
         // マスタープランオブジェクトの初期化
         this.resetMasterPlan();
+    }
+
+    /**
+     * CSVデータを読み込む
+     */
+    public loadCSVData(csv:string[][]) {
+        this.loadTemplateData();
+        this.tasks.loadCSV(csv);
     }
 
     /**
@@ -212,18 +220,7 @@ export class CPlan {
      * オプション選択肢の取得
      */
     public static getOptionLabel(key:string, mode:string):string {
-        let options:IValueOptions[];
-        if (mode == "type") {
-            options  = (CPlan.type_options as unknown[]) as IValueOptions[];
-        } else if (mode == "worker_type") {
-            options  = (CPlan.worker_type_options as unknown[]) as IValueOptions[];
-        } else if (mode == "start_date_auto") {
-            options  = (CPlan.auto_options as unknown[]) as IValueOptions[];
-        } else if (mode == "status") {
-            options  = (CPlan.status_options as unknown[]) as IValueOptions[];
-        } else {
-            throw new Error('Internal Error');
-        }
+        let options = CPlan._getValueOptions(mode);
         for (let row of options) {
             if (row.value == key) {
                 return row.label;
@@ -236,20 +233,49 @@ export class CPlan {
      * オプション選択肢の取得
      */
     public static getOptionLabelNumber(key:number, mode:string):string {
-        let options:IValueOptions[];
-        if (mode == "level") {
-            options  = (CPlan.level_options as unknown[]) as IValueOptions[];
-        } else if (mode == "progress") {
-            options  = (CPlan.status_options as unknown[]) as IValueOptions[];
-        } else {
-            throw new Error('Internal Error');
-        }
+        let options = CPlan._getValueOptions(mode);
         for (let row of options) {
             if (row.value == key) {
                 return row.label;
             }
         }
         return "";
+    }
+
+    /**
+     * オプション選択肢のキーが適切な値か確認する
+     */
+    public static isValidKey(key:string, mode:string):boolean {
+        let options = CPlan._getValueOptions(mode);
+        for (let row of options) {
+            if (row.value == key) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 
+     */
+    private static _getValueOptions(mode:string):IValueOptions[] {
+        let options:IValueOptions[];
+        if (mode == "type") {
+            options  = (CPlan.type_options as unknown[]) as IValueOptions[];
+        } else if (mode == "worker_type") {
+            options  = (CPlan.worker_type_options as unknown[]) as IValueOptions[];
+        } else if (mode == "start_date_auto") {
+            options  = (CPlan.auto_options as unknown[]) as IValueOptions[];
+        } else if (mode == "status") {
+            options  = (CPlan.status_options as unknown[]) as IValueOptions[];
+        } else if (mode == "level") {
+            options  = (CPlan.level_options as unknown[]) as IValueOptions[];
+        } else if (mode == "progress") {
+            options  = (CPlan.status_options as unknown[]) as IValueOptions[];
+        } else {
+            throw new Error('Internal Error');
+        }
+        return options;
     }
 
     /**
@@ -263,6 +289,12 @@ export class CPlan {
      */
     public getTypeName(key:string):string {
         return CPlan.getOptionLabel(key,"type");
+    }
+    /**
+     * typeのキーが適正かチェックする
+     */
+    public isTypeValidKey(key:string):boolean {
+        return CPlan.isValidKey(key,"type");
     }
     /**
      * worker_typeのValueOptions
@@ -314,6 +346,12 @@ export class CPlan {
     }
     public getAutoName(key:string):string {
         return CPlan.getOptionLabel(key,"start_date_auto");
+    }
+    /**
+     * start_date_autoのキーが適正かチェックする
+     */
+    public isAutoValidKey(key:string):boolean {
+        return CPlan.isValidKey(key,"start_date_auto");
     }
 
     /**

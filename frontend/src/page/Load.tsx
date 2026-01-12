@@ -22,9 +22,10 @@ import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import {CPlan} from "../lib/Plan";
 import { IValueOptions } from '../lib/typings';
+import { Input } from '@mui/material';
 
 /**
- * ファイルからJSONデータを読み込み
+ * JSONファイルからJSONデータを読み込み
  */
 function LoadJsonFile() {
   let navigate = useNavigate();
@@ -42,7 +43,6 @@ function LoadJsonFile() {
       const content = event.target?.result
         try {
           const jsonData = JSON.parse(content as string)
-          console.log(jsonData);
           navigate('/main', {state:{from:"file","data":jsonData}});
         } catch (error) {
           console.error('JSONファイルを解析できませんでした。', error)
@@ -52,12 +52,53 @@ function LoadJsonFile() {
   }
   
   return (
-    <input type='file' accept='.json' onChange={handleFileChange} />
+    <div>JSON: <Input inputProps={{"type":'file',"accept":".json"}} onChange={handleFileChange}/>
+    </div>
   );
 }
 
 /**
- * ファイルからJSONデータを読み込み
+ * CSVファイルからデータを読み込み
+ */
+function LoadCsvFile() {
+  let navigate = useNavigate();
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) {
+      console.error('ファイルを選択して下さい')
+      return
+    }
+  
+    const file = e.target.files[0]
+  
+    const reader = new FileReader()
+    reader.onload = event => {
+      const content = event.target?.result as string;
+        try {
+          const rows = parseCsv(content);
+          navigate('/main', {state:{from:"csv","data":rows}});
+        } catch (error) {
+          console.error('CSVファイルを解析できませんでした。', error)
+        }
+      }
+    reader.readAsText(file)
+  }
+  
+  // 文字列をCSV形式でParse
+  function parseCsv(text:string):string[][] {
+    let lines = text.split("\n");
+    const rows = lines.map(line => line.split(","));
+    return rows;
+  }
+
+  return (
+    <div>CSV: <Input inputProps={{"type":'file',"accept":".csv"}} onChange={handleFileChange}/>
+    </div>
+  );
+}
+
+/**
+ * サーバに保存されたファイルのリスト表示
  */
 function ListServerFile() {
   const [loaded,setLoaded] = React.useState<boolean>(false);
@@ -164,6 +205,7 @@ function Load() {
         </Grid>
         <Grid size={10} sx={{display: 'flex',justifyContent: 'flex-start'}}>
           <LoadJsonFile/>
+          <LoadCsvFile/>
         </Grid>
         <Grid size={2} sx={{display: 'flex',justifyContent: 'flex-start'}}>
           サーバから読み込む

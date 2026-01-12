@@ -11,7 +11,8 @@ import {
     IUpdateTask,
 } from "./typings";
 import ja from 'dayjs/locale/ja';
-import { toDateString,isInvalidDate } from "./Common";
+import { isInvalidDate } from "./Common";
+import { toDateString,toDateTimeString,getTodayDateString,getTodayDateTimeString } from "./Common";
 import {CPlan} from "./Plan";
 import { CHolidayList } from './Holiday';
 
@@ -37,6 +38,86 @@ export class CTaskList {
         }
         this.latest_id = 0;
         this.plan = plan;
+    }
+
+    /**
+     * CSVデータでTaskデータを読み込む
+     * 
+     * @param csv 
+     * @returns 
+     */
+    public loadCSV(csv:string[][]) {
+
+        const headers = csv.shift();
+        if (headers === undefined) {
+            return;
+        }
+        // タスクをクリア
+        this.task = [];
+        let id:number = 1;
+        let pre_id:null|number = null; // スタートポイントはnullのため
+        // CSVを読み込む
+        csv.map((row)=>{
+            let sc:ITask = this._getBrankData(id,pre_id);
+            // 必須項目のチェック
+            let reqs:number = 0;
+            for(let i=0;i<headers.length;i++) {
+                let key = headers[i];
+                let value = row[i];
+                if (row.length < i) continue;
+                if (value == "") continue;
+                switch(key) {
+                    case "start_date_auto":
+                        if (! this.plan.isAutoValidKey(value)) continue; // 正しい値かチェック
+                        sc.start_date_auto = value;
+                        reqs++; // 1
+                        break;
+                    case "start_date":
+                        if (isNaN((new Date(value)).getTime())) continue; // 日付フォーマットチェック
+                        sc.start_date = value;
+                        reqs++; // 2
+                        break;
+                    case "end_date":
+                        if (isNaN((new Date(value)).getTime())) continue; // 日付フォーマットチェック
+                        sc.end_date = value;
+                        break;
+                    case "duration":
+                        if (isNaN(Number(value))) continue; // 数値フォーマットチェック
+                        sc.duration = Number(value);
+                        reqs++; // 3
+                        break;
+                    case "type":
+                        if (! this.plan.isTypeValidKey(value)) continue; // 正しい値かチェック
+                        sc.type = value;
+                        reqs++; // 4
+                        break;
+                    case "name":
+                        sc.name = value;
+                        reqs++; // 5
+                        break;
+                    case "memo":
+                        sc.memo = value;
+                        break;
+                    case"level":
+                        if (isNaN(Number(value))) continue; // 数値フォーマットチェック
+                        sc.level = Number(value);
+                        break;
+                    case"progress":
+                        if (isNaN(Number(value))) continue; // 数値フォーマットチェック
+                        sc.progress = Number(value);
+                        break;
+                    case"ticket_no":
+                        sc.ticket_no = value;
+                        break;
+                }
+            }
+            // 5つの必須項目がないと登録しない
+            if (reqs >= 5) {
+                id++;
+                pre_id === null ? pre_id=1:pre_id++;
+                this.task.push(new CTask(this.plan,sc));
+            }
+        });
     }
 
     /**
@@ -244,12 +325,24 @@ export class CTaskList {
         this._checkMaxLatestId();
         let idx = this._getIndexByPreId(target_id);
         let new_id = this.max_id+1;
-        let json:ITask = {
+        let json:ITask = this._getBrankData(new_id,target_id);
+        this.task.push(new CTask(this.plan, json));
+        if (idx != null) {
+            this.task[idx].pre_id = new_id;
+        }
+        return new_id;
+    }
+
+    /**
+     * ブランクのデータ取得
+     */
+    private _getBrankData(new_id:number,target_id:null|number):ITask  {
+        return {
             "id": new_id,
             "pre_id": target_id,
             "start_date_auto": "normal",
-            "start_date": this.plan.create_date,
-            "end_date": this.plan.create_date,
+            "start_date": getTodayDateString(),
+            "end_date": getTodayDateString(),
             "duration": 0,
             "type": "normal",
             "name": "",
@@ -262,11 +355,6 @@ export class CTaskList {
             "link_type": "",
             "link_id": null
         };
-        this.task.push(new CTask(this.plan, json));
-        if (idx != null) {
-            this.task[idx].pre_id = new_id;
-        }
-        return new_id;
     }
 
     /**
