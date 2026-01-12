@@ -16,7 +16,7 @@ import {CWorkerList,CWorker} from "./Worker";
 import {CReferenceList} from "./Reference";
 import {CHolidayList} from "./Holiday";
 import {API,ILoadDataResponse} from "../lib/Api";
-import { toDateString } from "./Common";
+import { toDateString,toDateTimeString } from "./Common";
 // react-gantt
 import {ITask,ILink} from "@svar-ui/react-gantt"; 
 // GppGantt
@@ -116,7 +116,8 @@ export class CPlan {
     public loadTemplateData() {
         const data = jsondata;
         // 日付を今日の日付にする
-        data.plan.create_date = toDateString(new Date());;
+        data.plan.create_date = toDateTimeString(new Date());
+        data.plan.update_date = toDateTimeString(new Date());
         data.task[0].start_date = toDateString(new Date());;
         data.task[0].end_date = toDateString(new Date());;
 
@@ -575,6 +576,7 @@ export class CPlan {
      * セーブデータの作成
      */
     public getSaveData():object {
+        this.update_date = toDateTimeString(new Date());
         let data = {
             plan: {
                 title:this.title,
@@ -582,7 +584,7 @@ export class CPlan {
                 rev:this.rev,                
                 purpose: this.purpose,
                 create_date: this.create_date,
-                update_date: toDateString(new Date()),
+                update_date: this.update_date,
                 status: this.status,
                 masterplan: this.masterplan,
                 ticket_url: this.ticket_url,

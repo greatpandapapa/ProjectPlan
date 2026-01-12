@@ -66,16 +66,6 @@ function PlanPanel() {
                       }}/>
                 </Grid>
                 <Grid size={3}>
-                    Rev:{plan.rev}
-                </Grid>
-                <Grid size={9}>
-                    <TextField label="タイトル" fullWidth size="small" value={title}
-                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                        plan.title = event.target.value;
-                        setTitle(plan.title);
-                      }}/>
-                </Grid>
-                <Grid size={3}>
                     <FormControl fullWidth>
                     <InputLabel size="small" id="status-select-label">ステータス</InputLabel>
                     <Select labelId="status-select-label" 
@@ -89,31 +79,26 @@ function PlanPanel() {
                     </Select>
                     </FormControl>
                 </Grid>
+                <Grid size={1}><Box fontSize={16}>作成日</Box></Grid>
+                <Grid size={3}><Box fontSize={16} sx={{border:"solid #CCCCCC"}}>{plan.create_date}</Box></Grid>
+                <Grid size={1}><Box fontSize={16}>更新日</Box></Grid>
+                <Grid size={3}><Box fontSize={16} sx={{border:"solid #CCCCCC"}}>{plan.update_date}</Box></Grid>
+                <Grid size={1}><Box fontSize={16}>Rev</Box></Grid>
+                <Grid size={3}><Box fontSize={16} sx={{border:"solid #CCCCCC"}}>{plan.rev}</Box></Grid>
+                <Grid size={12}>
+                    <TextField label="タイトル" fullWidth size="small" value={title}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        plan.title = event.target.value;
+                        setTitle(plan.title);
+                      }}/>
+                </Grid>
                 <Grid size={12}>
                     <TextField label="目的" multiline rows={3} fullWidth size="small" value={purpose}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         plan.purpose = event.target.value;
                         setPurpose(plan.purpose);}}/>
                 </Grid>
-                <Grid size={3}>
-                    <DatePicker label="作成日" format="YYYY/MM/DD" value={create_date}
-                     onChange={(newValue) => {
-                        if (newValue != null) {
-                            plan.create_date = newValue.format('YYYY-MM-DD');
-                        }
-                        setCreateDate(dayjs(newValue))}}
-                        />
-                </Grid>
-                <Grid size={3}>
-                    <DatePicker label="更新日" format="YYYY/MM/DD" value={update_date}
-                     onChange={(newValue) => {
-                        if (newValue != null) {
-                            plan.update_date = newValue.format('YYYY-MM-DD');
-                        }
-                        setUpdateDate(dayjs(newValue))}}
-                        />
-                </Grid>
-                <Grid size={5}>
+                <Grid size={12}>
                     <FormControl fullWidth>
                     <InputLabel size="small" id="masterplan-select-label">マスタープラン</InputLabel>
                     <Select labelId="masterplan-select-label"
