@@ -56,8 +56,14 @@ class StoreController extends Controller {
     // ロードする
     public function load() {
         $name = $this->getRequestValue("name");
-        $data_path = Config::getDataPath();
-        $filename = $data_path."/".$name.".json";
+        $rev = $this->getRequestValue("rev");
+        if ($rev == "") {
+            $data_path = Config::getDataPath();
+            $filename = $data_path."/".$name.".json";
+        } else {
+            $backup_path = Config::getBackupPath();
+            $filename = $backup_path."/".$name.".json".".".$rev;
+        }
         if (! file_exists($filename)) {
             return new WarnningResponse(["mesg"=>"ファイルが存在しません"],1);
         } else {
@@ -89,7 +95,7 @@ class StoreController extends Controller {
         return new SuccessResponse($list);     
     }
 
-    // セーブする
+    // 削除する
     public function delete() {
         $name = $this->getRequestValue("name");
         if ($name != "_template") {
@@ -99,5 +105,28 @@ class StoreController extends Controller {
             return new SuccessResponse(); 
         }
         return new SuccessResponse();     
+    }
+
+    // バックアップから履歴を取得する
+    public function history() {
+        $name = $this->getRequestValue("name");
+        // 古いバイルをバックアップ
+        $backup_path = Config::getBackupPath();
+        $backup_files = $backup_path."/".$name.".json".".*";
+        $files = glob($backup_files);
+        $list = [];
+        foreach ($files as $filename) {
+            $json = file_get_contents($filename);
+            $data = json_decode($json,true);
+            $rev = $data["plan"]["rev"];
+            $uptime = $data["plan"]["update_date"];
+            $list[$rev] = $uptime;
+        }
+        krsort($list);
+        $list2 = [];
+        foreach(array_keys($list) as $rev) {
+            $list2[]= ["update_date"=>$list[$rev],"rev"=>$rev];
+        }
+        return new SuccessResponse($list2);
     }
 }

@@ -90,6 +90,8 @@ export class CPlan {
     status: string = String(CPlan.status_options[0].value);
     masterplan: null|string = null;
     ticket_url: string = "";
+    // 旧バージョンを読み込んでいることを示すフラグ
+    old_version:boolean = false;
 
     // プライベート
     public tasks: CTaskList = new CTaskList(this,jsondata);
@@ -185,7 +187,7 @@ export class CPlan {
         if (this.masterplan != null && this.masterplan != "" ) {
             if (this._masterplan === null) {
                 this._masterplan = new CPlan;
-                API.loadData(this.masterplan,(response:ILoadDataResponse)=>{
+                API.loadData(this.masterplan,"",(response:ILoadDataResponse)=>{
                     if (this._masterplan != null && response.code == 0) {
                         this._masterplan.load(response.result.data as DataJson);
                         console.log("master plan loaded");

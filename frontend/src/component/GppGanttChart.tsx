@@ -103,7 +103,7 @@ export function GppDefaultConfig():IGppGanttConfig {
         start: null,
         end: null,
         cell_height:25,
-        cell_shrink_height: 30,
+        cell_shrink_height: 40,
         cell_width_class: "standard",
         cell_day_width: 25,
         cell_week_width: 50,
@@ -995,7 +995,7 @@ function GppSvgGanttChartBars(props:GppGanttChartInternalProps):ReactNode[] {
                 bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align,handleOnclick));
             } else {
                 bars.push(GppSvgGanttChartBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke,handleOnclick));
-                bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/4+2,xs.pw-4,dm.h/2-4,colors.progress,handleOnclick));
+                bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/2+4,xs.pw-4,dm.h/3-4,colors.progress,handleOnclick));
                 bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align,handleOnclick));
             }
         }

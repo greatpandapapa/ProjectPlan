@@ -39,6 +39,7 @@ function Main() {
     setValue(newValue);
   };
 
+  console.log("main");
   if (!loaded) {
     let from:string = state["from"];
     if (from == "new") {
@@ -55,9 +56,10 @@ function Main() {
       setLoaded(true);
     } else if (from == "server") {
       let name:string = state["name"];
-      API.loadData(name,(response)=>{
+      API.loadData(name,"",(response)=>{
         plan.load(((response as unknown) as ILoadDataResponse).result.data as DataJson);
         plan.loadMasterPlan();
+        plan.old_version = false;
         setLoaded(true);
       });   
     }

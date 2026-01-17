@@ -6,12 +6,15 @@ import { DateField } from '@mui/x-date-pickers/DateField';
 import dayjs, { Dayjs } from 'dayjs';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
 import { plan,CPlan } from '../lib/Plan';
 import { ReferenceList } from "../component/ReferenceList";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import {API,IgetListResponse,IgetListRow} from "../lib/Api";
+import {API,IgetHistoryResponse,IgetListResponse,IgetListRow,IgetHistoryRow,ILoadDataResponse} from "../lib/Api";
+import {DataJson} from "../lib/typings";
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
+import { Link,useNavigate  } from 'react-router-dom';
 
 /**
  * 旅行計画の編集画面
@@ -22,8 +25,6 @@ function PlanPanel() {
     const [name,  setName]  = useState<string>(plan.name);
     const [title, setTitle] = useState<string>(plan.title);
     const [purpose, setPurpose] = useState<string>(plan.purpose);
-    const [create_date, setCreateDate] = useState<Dayjs>(dayjs(plan.create_date));
-    const [update_date, setUpdateDate] = useState<Dayjs>(dayjs(plan.update_date));
     const [status, setStatus] = useState<string>(plan.status);
     const [masterplan,setMasterPlan] = useState<null|string>(plan.masterplan);
     const [ticket_url,setTicketUrl] = useState<string>(plan.ticket_url);
@@ -31,7 +32,7 @@ function PlanPanel() {
     const [masterList,setMasterList] = useState<(null|string)[]>([]);
 
     if (!loaded) {
-        API.getList((response: IgetListResponse)=>{
+        const p1 = API.getList((response: IgetListResponse)=>{
             let row:IgetListRow;
             let master_list:(null|string)[] = [null];
             for (row of response.result) {
@@ -41,7 +42,7 @@ function PlanPanel() {
             }
             setMasterList(master_list);
             setLoaded(true);
-        });  
+        });
 
         return (<>loading...</>);  
     }
@@ -55,6 +56,13 @@ function PlanPanel() {
         (name ===  null)? <MenuItem value="">なし</MenuItem> : <MenuItem value={name}>{name}</MenuItem>
     ));
 
+    // Revフィールドの背景色
+    let rev_background:string = "";
+    let rev_color = "";
+    if (plan.old_version == true) {
+        rev_background = "red";
+        rev_color = "white";
+    }
     return (
         <Box width={800}>
             <Grid container spacing={2} alignItems="center">
@@ -84,7 +92,7 @@ function PlanPanel() {
                 <Grid size={1}><Box fontSize={16}>更新日</Box></Grid>
                 <Grid size={3}><Box fontSize={16} sx={{border:"solid #CCCCCC"}}>{plan.update_date}</Box></Grid>
                 <Grid size={1}><Box fontSize={16}>Rev</Box></Grid>
-                <Grid size={3}><Box fontSize={16} sx={{border:"solid #CCCCCC"}}>{plan.rev}</Box></Grid>
+                <Grid size={3}><Box fontSize={16} sx={{border:"solid #CCCCCC",background:rev_background,color:rev_color}}>{plan.rev}</Box></Grid>
                 <Grid size={12}>
                     <TextField label="タイトル" fullWidth size="small" value={title}
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +131,57 @@ function PlanPanel() {
                 </Grid>
             </Grid>
             <ReferenceList edit={true}/>
+            <LoadOldVersion name={name} loaded={setLoaded}/>
         </Box>
+    );
+}
+type LoadOldVersionProps = {
+    name: string;
+    loaded: (flg:boolean)=>void;
+}
+/**
+ * 過去リビジョンの読み込み
+ */
+function LoadOldVersion(props:LoadOldVersionProps) {
+    let navigate = useNavigate();
+//    const [loaded,setLoaded] = useState<boolean>(false);
+    const [history,setHistory] = useState<null|IgetHistoryRow[]>(null);
+    const [rev,setRev] = useState<string>("")
+
+    if (history === null) {
+        API.getHistory(props.name,(response: IgetHistoryResponse)=>{
+            setHistory(response.result);
+            setRev(response.result[0].rev)
+        });
+        return (<></>);  
+    }
+
+    return (
+        <Grid container sx={{"justifyContent":"left","alignItem":"left"}} spacing={1}>
+            <Grid>旧バージョン
+            </Grid>
+            <Grid>
+                <Select id="rev" value={rev} size="small"
+                    onChange={(event) => {
+                        setRev(event.target.value);
+                    }}>
+                    {history.map((row)=>{
+                        return (<MenuItem value={row.rev}>Rev {row.rev}({row.update_date})</MenuItem>)
+                    })}
+                </Select>
+            </Grid>
+            <Grid>
+                <Button variant="outlined"
+                onClick={(event) => {
+                    API.loadData(props.name,rev,(response)=>{
+                        plan.load(((response as unknown) as ILoadDataResponse).result.data as DataJson);
+                        plan.loadMasterPlan();
+                        plan.old_version = true;;
+                        props.loaded(false);
+                    });   
+                }}>Load</Button>
+            </Grid>
+        </Grid>
     );
 }
 

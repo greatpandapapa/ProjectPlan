@@ -54,11 +54,15 @@ function SavePanel() {
     <Grid container>
         <Typography>
             <Box>
-            <Box sx={{ p: 2, display: 'flex',justifyContent: 'flex-start',verticalAlign:'center' }}>
-                サーバに保存しますか？<Button variant="outlined" size="small" onClick={saveData} sx={{bgcolor: '#ffffff'}}>はい</Button>
-                {saved == "success" && "保存しました"}
-                {saved == "error" && resp_mesg}
-            </Box>
+            {plan.old_version == true ? (
+                <>旧バージョンが読み込まれているので保存できません</>
+            ) : (
+                <Box sx={{ p: 2, display: 'flex',justifyContent: 'flex-start',verticalAlign:'center' }}>
+                    サーバに保存しますか？<Button variant="outlined" size="small" onClick={saveData} sx={{bgcolor: '#ffffff'}}>はい</Button>
+                    {saved == "success" && "保存しました"}
+                    {saved == "error" && resp_mesg}
+                </Box>
+            )}
             <Box sx={{ p: 2, display: 'flex',justifyContent: 'flex-start' }}>
               <JsonDownloadLink/>&nbsp;
               <CSVDownloadLink/>

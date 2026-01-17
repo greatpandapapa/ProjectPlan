@@ -35,8 +35,8 @@ export class API {
     }
 
     // データの読み込み
-    static loadData(name:string,callback:(response_data:ILoadDataResponse) => void) {
-        const params = {"controller":"Store","action":"load","name":name};
+    static loadData(name:string,rev:string,callback:(response_data:ILoadDataResponse) => void) {
+        const params = {"controller":"Store","action":"load","name":name,"rev":rev};
         return API.sendPostRequest(params,callback);
     }
 
@@ -46,7 +46,7 @@ export class API {
         return API.sendPostRequest(params,callback);
     }
 
-    // データの保存
+    // リストの取得
     static getList(callback:(response_data:IgetListResponse) => void) {
         const params = {"controller":"Store","action":"list"};
         return API.sendPostRequest(params,callback);
@@ -55,6 +55,12 @@ export class API {
     // データの削除
     static deleteData(name:string,callback:(response_data:object) => void) {
         const params = {"controller":"Store","action":"delete","name":name};
+        return API.sendPostRequest(params,callback);
+    }
+
+    // リストの取得
+    static getHistory(name:string,callback:(response_data:IgetHistoryResponse) => void) {
+        const params = {"controller":"Store","action":"history","name":name};
         return API.sendPostRequest(params,callback);
     }
 }
@@ -80,6 +86,15 @@ export interface IgetListRow {
     purpose:string;
     status:string;
     create_date:string;                
+    update_date:string;                
+    rev:string;                
+}
+
+export interface IgetHistoryResponse extends IPostResponse {
+    code: number,
+    result: IgetHistoryRow[]
+} 
+export interface IgetHistoryRow {
     update_date:string;                
     rev:string;                
 }
