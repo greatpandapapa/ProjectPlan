@@ -200,7 +200,7 @@ export function TaskGrid(props:TaskGridProps) {
     },
     {
       field: 'type',
-      headerName: '種類',
+      headerName: 'タイプ',
       width: 100,
       align: 'center',
       headerAlign: 'center',
@@ -237,7 +237,6 @@ export function TaskGrid(props:TaskGridProps) {
       disableColumnMenu: true,
       editable: enable_editable,
     },
-/*
     {
       field: 'master_milestone',
       headerName: 'マスター',
@@ -247,7 +246,6 @@ export function TaskGrid(props:TaskGridProps) {
       disableColumnMenu: true,
       valueOptions: plan.getMasterPlanMileStoneValueOptions(),
     },
-*/
     {
       field: 'actions',
       type: 'actions',

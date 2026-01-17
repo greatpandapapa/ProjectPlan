@@ -90,7 +90,7 @@ function ViewPanel() {
     }
     return (
       <TableRow key={props.row.id} style={{backgroundColor:bgcolor}}>
-      <TaskSlimTableCells {...props} /> NE 5
+      <TaskSlimTableCells {...props} />
       </TableRow>
     );
   });
