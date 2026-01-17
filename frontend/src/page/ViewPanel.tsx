@@ -19,10 +19,6 @@ import { Link } from '@mui/material';
 import {EditTaskModal} from './TaskModal';
 import EditIcon from '@mui/icons-material/Edit';
 
-type ViewPanelProps = {
-  mode: string;
-}
-
 /**
  * タスク一覧パネル
  */
@@ -94,7 +90,7 @@ function ViewPanel() {
     }
     return (
       <TableRow key={props.row.id} style={{backgroundColor:bgcolor}}>
-        <TaskSlimTableCells {...props} />
+      <TaskSlimTableCells {...props} /> NE 5
       </TableRow>
     );
   });

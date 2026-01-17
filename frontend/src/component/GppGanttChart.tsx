@@ -10,8 +10,6 @@
 import {useState,memo,ReactNode,useRef,createContext,useContext} from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import Button from '@mui/material/Button';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -34,7 +32,11 @@ function getEndOfMonthDate(date:Date):Date {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0);
 }
 
-
+// mode
+const mode_list = {
+    normal: "normal",
+    shrink: "shrink"
+} as const;
 // ラベルの表示位置
 const label_align_list = {
     center: "center",
@@ -57,6 +59,7 @@ export interface IGppGanttConfig {
     start: null|Date;
     end: null|Date;
     cell_height: number;
+    cell_shrink_height: number;
     cell_width_class: typeof cell_width_list[keyof typeof cell_width_list];
     cell_day_width: number;
     cell_week_width: number;
@@ -75,6 +78,8 @@ export interface IGppGanttConfig {
     default_level_bar_fill_color: string;
     default_level_bar_stroke_color: string;
     progress_fill_color:string;
+    table_complete_bgcolor:string;
+    table_view: boolean;
     calendar_satday_bgcolor: string;
     calendar_sunday_bgcolor: string;
     calendar_holiday_bgcolor: string;
@@ -90,11 +95,6 @@ export interface IGppGanttConfig {
     date_year_month_format: string;
     date_month_format: string;
     date_day_format: string;
-    lang_mesg_month: string;
-    lang_mesg_week: string;
-    lang_mesg_day: string;
-    lang_mesg_standard: string;
-    lang_mesg_narrow: string;
 }
 
 // デフォルトのデフォルト値
@@ -103,6 +103,7 @@ export function GppDefaultConfig():IGppGanttConfig {
         start: null,
         end: null,
         cell_height:25,
+        cell_shrink_height: 30,
         cell_width_class: "standard",
         cell_day_width: 25,
         cell_week_width: 50,
@@ -121,6 +122,8 @@ export function GppDefaultConfig():IGppGanttConfig {
         default_level_bar_fill_color: "yellow",
         default_level_bar_stroke_color: "blue",
         progress_fill_color: "gray",
+        table_complete_bgcolor: "#cccccc",
+        table_view: true,
         calendar_satday_bgcolor: "#DDFFFF",
         calendar_sunday_bgcolor: "#DDFFFF",
         calendar_holiday_bgcolor: "#DDFFFF",
@@ -136,11 +139,6 @@ export function GppDefaultConfig():IGppGanttConfig {
         date_year_month_format: "yyyy/MM",
         date_month_format: "MM",
         date_day_format: "dd",
-        lang_mesg_month: "Month",
-        lang_mesg_week: "Week",
-        lang_mesg_day: "Day",
-        lang_mesg_standard: "Standard",
-        lang_mesg_narrow: "Narrow",
     };
 }
 
@@ -197,6 +195,9 @@ class CGppGanttDataManager {
     public start_date: Date;
     public end_date: Date;
 
+    // モード
+    public mode: typeof mode_list[keyof typeof mode_list] = "normal";
+
     // セルの幅と高さ
     public w:number = 0;
     public h:number = 0;
@@ -205,14 +206,24 @@ class CGppGanttDataManager {
     // ガントチャートエリアの幅と高さ
     public width:number = 0;
     public height:number = 0;
-    
+
+    // ラベル表示位置
+    public label_align: typeof label_align_list[keyof typeof label_align_list] = "right";
+
     // 表示単位別の計算をまとめた計算モジュールを取得
     private unit_culator:CGppGanttCalUnitCalculator;
 
+    // IDのインデックス
     private id_index:number[] = [];
+    // IDのインデックス
+    private shrink_index:number[] = [];
 
     // コンストラクタ
-    constructor(config:IGppGanttConfig,columns:IGppGanttColumns[],data:IGppGanttData[],links:IGppGanttLink[]) {
+    constructor(mode:string,config:IGppGanttConfig,columns:IGppGanttColumns[],data:IGppGanttData[],links:IGppGanttLink[]) {
+        // モード
+        if (mode == "normal" || mode == "shrink") {
+            this.mode = mode;
+        }
         this.config = config;
         this.columns = columns;
         this.data = data;
@@ -223,7 +234,15 @@ class CGppGanttDataManager {
 
         // セルの幅と高さ
         this.w_mark = config.cell_day_width;
-        this.h = config.cell_height;
+        if (this.mode == "normal") {
+            this.h = config.cell_height;
+            this.label_align = config.label_align;
+        } else if (this.mode == "shrink")  {
+            this.h = config.cell_shrink_height;
+            this.label_align = "center";
+        } else {
+            throw new Error("Internal Error");
+        }
         if (this.config.calendar_unit == "day") {
             this.w = config.cell_day_width;
             this.unit_culator = new CDayGppGanttCalUnitCalculator(this);;
@@ -244,10 +263,11 @@ class CGppGanttDataManager {
         this._setStartEndDate();
         // インデックス作成
         this._makeIndex();
+        this._makeShrinkIndex();
 
         // ガントチャートエリアの幅と高さ
         this.width = (this.getPeriodNums() + 1) * this.w;
-        this.height = this.data.length * this.h;
+        this.height = this.getMaxRows() * this.h;
 
         // セルの幅
         if (this.config.cell_width_class == "standard") {
@@ -266,7 +286,7 @@ class CGppGanttDataManager {
         let max_date = new Date("1970-01-01");
         let min_date = new Date("2999-12-31");
 
-        if (this.data.length == 0) {
+        if (this.getDataLength() == 0) {
             throw new Error('Internal Error');
         }
 
@@ -307,8 +327,41 @@ class CGppGanttDataManager {
 
     // インデックス作成
     private _makeIndex():void {
-        for (let i:number = 0; i < this.data.length; i++) {
+        for (let i:number = 0; i < this.getDataLength(); i++) {
             this.id_index[this.data[i].id] = i;
+        }
+    }
+
+    // インデックス作成
+    private _makeShrinkIndex():void {
+        if (this.isShrinkMode())  {
+            let l:number = 0;
+            this.shrink_index = [];
+            for (let i:number = 0; i < this.getDataLength(); i++) {
+                if (i!=0 && this.data[i].level != 99) l++;
+                this.shrink_index[i] = l;
+            }
+        }
+    }
+    // モードの対応したインデックス
+    getIndexWithMode(index:number) {
+        if (this.isShrinkMode())  {
+            return this.shrink_index[index];
+        } else {
+            return index;            
+        }
+    }
+    // shurink mode
+    isShrinkMode():boolean {
+        return (this.mode == "shrink");  
+    }
+
+    // 表示行の最大
+    getMaxRows():number {
+        if (this.isShrinkMode())  {
+            return this.shrink_index[this.data.length-1]+1;
+        } else {
+            return this.getDataLength();
         }
     }
 
@@ -323,7 +376,7 @@ class CGppGanttDataManager {
 
     // Y座標を取得
     getYbyIndex(index:number):number {
-        return index*this.h;
+        return this.getIndexWithMode(index)*this.h;
     }
 
     // X座標を取得
@@ -382,11 +435,11 @@ class CGppGanttDataManager {
         if (sx !== null) {
             if (this.data[index] !== undefined) {
                 const row = this.data[index];
-                if (this.config.label_align == "center") {
+                if (this.label_align == "center") {
                     return {x:sx.x1+sx.w/2,align:"middle",text:row.name};
-                } else if (this.config.label_align == "right") {
+                } else if (this.label_align == "right") {
                     return {x:sx.x2+2,align:"start",text:row.name};
-                } else if (this.config.label_align == "left") {
+                } else if (this.label_align == "left") {
                     return {x:sx.x1-2,align:"end",text:row.name};
                 }
             }
@@ -588,7 +641,7 @@ class CMOnthGppGanttCalUnitCalculator extends CGppGanttCalUnitCalculator {
     public get1stRowLabel(today:Date):string {
         return format(today,this.dm.config.date_year_format);
     }
-    // 2行目のラベル
+    // 2行目のラベル 
     public get2ndRowLabel(today:Date):string {
         return format(today,this.dm.config.date_month_format);
     }
@@ -770,12 +823,24 @@ function GppGanttTableHeader(props:GppGanttChartInternalProps) {
 function GppGanttTableBody(props:GppGanttChartInternalProps) {
     const {dm} = props;
 
+    function getBgColor(row:IGppGanttData):string {
+        if (row.progress !== undefined) {
+            if (row.progress == 100) {
+                return dm.config.table_complete_bgcolor;
+            }
+        }
+        return "";
+    }
+
     return (
       <Table>
         <TableBody>
           {dm.data.map((row) => { 
-                return (
-                    <TableRow>
+                if (dm.isShrinkMode() && row.level == 99) {
+                  return (<></>);
+                } else {
+                  return (
+                    <TableRow style={{background:getBgColor(row)}}>
                     {dm.columns.map((col) => {
                         return (
                         <GanttTableCell sx={{height:dm.h-1,maxWidth:col.width,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} align={col.align} 
@@ -788,6 +853,7 @@ function GppGanttTableBody(props:GppGanttChartInternalProps) {
                     })}
                     </TableRow>)
                 }
+            }
             )}
         </TableBody>
       </Table>
@@ -872,14 +938,14 @@ function GppSvgGanttChartBody(props:GppGanttChartInternalProps) {
     }
 
     let hlines = [];
-    for (let i=0;i <= dm.data.length; i++ ) {
+    for (let i=0;i <= dm.getMaxRows(); i++ ) {
         hlines.push(<line x1="0" y1={i*dm.h} x2={dm.width} y2={i*dm.h} stroke={dm.config.grid_boarder_color}/>);
     }
 
     // バー表示
-    let bars = GppSvgGanttChartBars(props.dm);
+    let bars = GppSvgGanttChartBars(props);
     // リンク線
-    let linklines = GppSvgGanttChartLinkLines(props.dm);
+    let linklines = GppSvgGanttChartLinkLines(props);
 
     return (
         <svg width={dm.width} height={dm.height} viewBox={viewbox} preserveAspectRatio="xMidYMid slice" role="img">
@@ -901,28 +967,36 @@ function GppSvgGanttChartBody(props:GppGanttChartInternalProps) {
 /**
  * バーを描画する
  */
-function GppSvgGanttChartBars(dm:CGppGanttDataManager):ReactNode[] {
+function GppSvgGanttChartBars(props:GppGanttChartInternalProps):ReactNode[] {
+    const dm = props.dm;
     let bars:ReactNode[] = [];
 
-    for(let i:number = 0; i < dm.getDataLength(); i++) {
-        let xs = dm.getXbyIndex(i);
-        let y = dm.getYbyIndex(i);
-        let lxs = dm.getLabelXbyIndex(i);
+    for(let i:number = 0; i < props.dm.getDataLength(); i++) {
+        const xs = dm.getXbyIndex(i);
+        const y = dm.getYbyIndex(i);
+        const lxs = dm.getLabelXbyIndex(i);
+        const id = dm.getValueByColId(dm.data[i],"id")
         if (xs !== null && lxs !== null) {
+            const handleOnclick = ()=>{
+                console.log(id);
+                if (props.onClickTask !== undefined) props.onClickTask(id);
+            }; 
             // バーの色
-            // バーの描画
             let colors = dm.getColorsByIndex(i);
+            // バーの描画
             if (xs.level != 99) {
-                bars.push(GppSvgGanttChartLevelBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke));
-                bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/4+2,xs.pw-4,dm.h/2-4,colors.progress));
-                bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align));
+                if (! dm.isShrinkMode()) {
+                    bars.push(GppSvgGanttChartLevelBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke,handleOnclick));
+                    bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/4+2,xs.pw-4,dm.h/2-4,colors.progress,handleOnclick));
+                    bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align,handleOnclick));
+                }
             } else if (xs.duration === 0) {
-                bars.push(GppSvgGanttChartDiamond(xs.x1+2,y+4,dm.w_mark-4,dm.h-4,colors.fill,colors.stroke));
-                bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align));
+                bars.push(GppSvgGanttChartDiamond(xs.x1+2,y+4,dm.w_mark-4,dm.h-4,colors.fill,colors.stroke,handleOnclick));
+                bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align,handleOnclick));
             } else {
-                bars.push(GppSvgGanttChartBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke));
-                bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/4+2,xs.pw-4,dm.h/2-4,colors.progress));
-                bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align));
+                bars.push(GppSvgGanttChartBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke,handleOnclick));
+                bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/4+2,xs.pw-4,dm.h/2-4,colors.progress,handleOnclick));
+                bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align,handleOnclick));
             }
         }
     }
@@ -931,7 +1005,8 @@ function GppSvgGanttChartBars(dm:CGppGanttDataManager):ReactNode[] {
 }
 
 // リンク線の描画
-function GppSvgGanttChartLinkLines(dm:CGppGanttDataManager):ReactNode[] {
+function GppSvgGanttChartLinkLines(props:GppGanttChartInternalProps):ReactNode[] {
+    const dm = props.dm;
     let lines:ReactNode[] = [];
 
     for(let i:number = 0; i < dm.getLinkLength(); i++) {
@@ -947,7 +1022,7 @@ function GppSvgGanttChartLinkLines(dm:CGppGanttDataManager):ReactNode[] {
 }
 
 // レベルバー
-function GppSvgGanttChartLevelBar(x:number,y:number,w:number,h:number,fill:string,stroke:string) {
+function GppSvgGanttChartLevelBar(x:number,y:number,w:number,h:number,fill:string,stroke:string,handler:()=>void) {
     let points:string = "";
     points += String(x)+","+String(y)+" ";
     points += String(x+w)+","+String(y)+" ";
@@ -955,28 +1030,28 @@ function GppSvgGanttChartLevelBar(x:number,y:number,w:number,h:number,fill:strin
     points += String(x+w-6)+","+String(y+h-6)+" ";
     points += String(x+6)+","+String(y+h-6)+" ";
     points += String(x)+","+String(y+h)+" ";
-    return(<polygon points={points} fill={fill} stroke={stroke} rx="5"></polygon>);
+    return(<polygon onClick={handler} points={points} fill={fill} stroke={stroke} rx="5"></polygon>);
 }
 // バー
-function GppSvgGanttChartBar(x:number,y:number,w:number,h:number,fill:string,stroke:string) {
-    return(<rect x={x} y={y} width={w} height={h} fill={fill} stroke={stroke} rx="5"></rect>);
+function GppSvgGanttChartBar(x:number,y:number,w:number,h:number,fill:string,stroke:string,handler:()=>void) {
+    return(<rect onClick={handler} x={x} y={y} width={w} height={h} fill={fill} stroke={stroke} rx="5"></rect>);
 }
 // プログレスバー
-function GppSvgGanttChartProgressBar(x:number,y:number,w:number,h:number,fill:string) {
-    return(<rect x={x} y={y} width={w} height={h} fill={fill}></rect>);
+function GppSvgGanttChartProgressBar(x:number,y:number,w:number,h:number,fill:string,handler:()=>void) {
+    return(<rect onClick={handler} x={x} y={y} width={w} height={h} fill={fill}></rect>);
 }
 // ラベル文字列
-function GppSvgGanttChartLabel(x:number,y:number,text:string,align:string) {
-    return (<text x={x} y={y} alignment-baseline="middle" text-anchor={align} font-size="14" >{text}</text>);
+function GppSvgGanttChartLabel(x:number,y:number,text:string,align:string,handler:()=>void) {
+    return (<text onClick={handler} x={x} y={y} alignment-baseline="middle" text-anchor={align} font-size="14" >{text}</text>);
 }
 // ひし形
-function GppSvgGanttChartDiamond(x:number,y:number,w:number,h:number,fill:string,stroke:string) {
+function GppSvgGanttChartDiamond(x:number,y:number,w:number,h:number,fill:string,stroke:string,handler:()=>void) {
     let points:string = "";
     points += String(x)+","+String(y+h/2)+" ";
     points += String(x+w/2)+","+String(y)+" ";
     points += String(x+w)+","+String(y+h/2)+" ";
     points += String(x+w/2)+","+String(y+h);
-    return(<polygon points={points} fill={fill} stroke={stroke} rx="5"></polygon>);
+    return(<polygon onClick={handler}  points={points} fill={fill} stroke={stroke} rx="5"></polygon>);
 }
 // リンク線
 function GppSvgGanttChartLine(x1:number,y1:number,x2:number,y2:number,stroke:string) {
@@ -985,6 +1060,7 @@ function GppSvgGanttChartLine(x1:number,y1:number,x2:number,y2:number,stroke:str
 
 // Propsの型
 export type GppGanttChartProps = {
+    mode: string;
     width: number;
     height: number;
     config: IGppGanttConfig;
@@ -999,59 +1075,23 @@ type GppGanttChartInternalProps = {
     onClickTask?: (id:string)=>void,       // タスクをクリックしたときに呼ばれるオールバック
 }
 
-// Propsの型
-type SelectScaleProps = {
-  dm: CGppGanttDataManager;
-  unit: string;
-  width_class: string;
-  setUnit: (unit:string) => void;
-  setWidth: (width:string) => void;
-}
-
-// 表示スケールの変更
-function SelectScale(props:SelectScaleProps) {
-    return (
-        <Grid container spacing={1} justifyContent="flex-end" sx={{width:1}}>
-            <Button variant={props.width_class=="standard"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setWidth("standard")}}>{props.dm.config.lang_mesg_standard}</Button>
-            <Button variant={props.width_class=="narrow"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setWidth("narrow")}}>{props.dm.config.lang_mesg_narrow}</Button>
-            <Button variant={props.unit=="month"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("month")}}>{props.dm.config.lang_mesg_month}</Button>
-            <Button variant={props.unit=="week"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("week")}}>{props.dm.config.lang_mesg_week}</Button>
-            <Button variant={props.unit=="day"? "contained":"outlined"} sx={{padding:0}} onClick={(e)=>{props.setUnit("day")}}>{props.dm.config.lang_mesg_day}</Button>
-        </Grid>);
-}
 
 /**
  * Gppガントチャート
  */
 export function GppGanttChart(props:GppGanttChartProps) {
-    const [unit,setUnit] = useState<string>(props.config.calendar_unit);
-    const [width_class,setWidthClass] = useState<string>(props.config.cell_width_class);
     const tableEl = useRef<HTMLDivElement>(null);
     const calendarEl = useRef<HTMLDivElement>(null);
 
     // データマネージャ
-    let dm:CGppGanttDataManager = new CGppGanttDataManager(props.config,props.columns,props.data,props.links);
-
-    // 列の表示単位
-    function changeUnit(unit:string) {
-        if (unit == "day" || unit == "week" || unit == "month") {
-            dm.config.calendar_unit = unit;
-            dm.setup();
-            setUnit(unit);
-        }
-    }
-    
-    // 列幅
-    function changeWidthClass(width_class:string) {
-        if (width_class == "standard" || width_class == "narrow") {
-            dm.config.cell_width_class = width_class;
-            dm.setup();
-            setWidthClass(width_class);
-        }
-    }
-
+    let dm:CGppGanttDataManager = new CGppGanttDataManager(props.mode,props.config,props.columns,props.data,props.links);
     dm.setup();
-    const cal_width = props.width-350;
+    let cal_width;
+    if (dm.config.table_view == true){
+        cal_width = props.width-350;
+    } else {
+        cal_width = props.width;
+    }
 
     // スクロール連動
     const handleScroll = (left:boolean) => {
@@ -1066,18 +1106,18 @@ export function GppGanttChart(props:GppGanttChartProps) {
   
     return (
         <Stack direction={"column"} spacing={0.5}>
-            <SelectScale dm={dm} unit={unit} setUnit={changeUnit} width_class={width_class} setWidth={changeWidthClass}/>
             <Stack direction={"row"} spacing={0.5}>
+                {(dm.config.table_view == true) ? ( 
                 <Box ref={tableEl} onScroll={()=>{handleScroll(true)}} sx={{width:400,overflowY:'auto',overflowX:"scroll",height:props.height}}>
                     <Stack direction={"column"} spacing={0}>
                         <GppGanttTableHeader dm={dm}/>
                         <GppGanttTableBody dm={dm} onClickTask={props.onClickTask} />
                     </Stack>
-                </Box>
+                </Box>):(<></>)}
                 <Box ref={calendarEl} onScroll={()=>{handleScroll(false)}} sx={{width:cal_width ,overflow: 'auto',height:props.height}} >
                     <Stack direction={"column"} spacing={0}>
                         <GppSvgGanttChartHeader  dm={dm}/>
-                        <GppSvgGanttChartBody  dm={dm}/>
+                        <GppSvgGanttChartBody  dm={dm}  onClickTask={props.onClickTask}/>
                     </Stack>
                 </Box>
             </Stack>

@@ -143,9 +143,10 @@ export class CPlan {
     /**
      * CSVデータを読み込む
      */
-    public loadCSVData(csv:string[][]) {
+    public loadCSVData(filename:string,csv:string[][]) {
         this.loadTemplateData();
         this.tasks.loadCSV(csv);
+        this.name = filename;
     }
 
     /**

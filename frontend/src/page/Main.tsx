@@ -27,7 +27,7 @@ import MyAppBar from "../component/MyAppBar";
 import ViewPanel from './ViewPanel';
 import MasterViewPanel from './MasterViewPanel';
 import HolidayViewPanel from './HolidayViewPanel';
-import GppGanttPanel from './GppGanttPanel';
+import GppGanttPanel from './GanttChartPanel';
 import {config,convMobileText} from "../lib/Config"
 
 function Main() {
@@ -50,7 +50,8 @@ function Main() {
       setLoaded(true);
     } else if (from == "csv") {
       const csv = state["data"];
-      plan.loadCSVData((csv as string[][]));
+      const filename = state["filename"];
+      plan.loadCSVData(filename,(csv as string[][]));
       setLoaded(true);
     } else if (from == "server") {
       let name:string = state["name"];

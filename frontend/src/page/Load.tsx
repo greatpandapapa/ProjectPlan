@@ -36,19 +36,20 @@ function LoadJsonFile() {
       return
     }
   
-    const file = e.target.files[0]
+    const file = e.target.files[0];
+    const filename = file.name.replace(/\.[^\.]*$/, ''); // 拡張子を削除
   
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = event => {
       const content = event.target?.result
         try {
-          const jsonData = JSON.parse(content as string)
-          navigate('/main', {state:{from:"file","data":jsonData}});
+          const jsonData = JSON.parse(content as string);
+          navigate('/main', {state:{from:"file","data":jsonData,"filename":filename}});
         } catch (error) {
-          console.error('JSONファイルを解析できませんでした。', error)
+          console.error('JSONファイルを解析できませんでした。', error);
         }
       }
-    reader.readAsText(file)
+    reader.readAsText(file);
   }
   
   return (
@@ -69,19 +70,20 @@ function LoadCsvFile() {
       return
     }
   
-    const file = e.target.files[0]
-  
-    const reader = new FileReader()
+    const file = e.target.files[0];
+    const filename = file.name.replace(/\.[^\.]*$/, ''); // 拡張子を削除
+
+    const reader = new FileReader();
     reader.onload = event => {
       const content = event.target?.result as string;
         try {
           const rows = parseCsv(content);
-          navigate('/main', {state:{from:"csv","data":rows}});
+          navigate('/main', {state:{from:"csv","data":rows,"filename":filename}});
         } catch (error) {
-          console.error('CSVファイルを解析できませんでした。', error)
+          console.error('CSVファイルを解析できませんでした。', error);
         }
       }
-    reader.readAsText(file)
+    reader.readAsText(file);
   }
   
   // 文字列をCSV形式でParse
