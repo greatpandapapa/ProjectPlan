@@ -10,6 +10,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Close';
 import {useWindowSize} from '../component/useWindowsSize';
 import { Link } from 'react-router-dom';
+import clsx from 'clsx';
 
 import {
   GridRowsProp,
@@ -23,8 +24,10 @@ import {
   GridRow,
   GridRowModes,
   GridRowModesModel,
+  GridCellParams,
 } from '@mui/x-data-grid';
 import {StripedDataGrid} from '../component/CustomMui';
+import { IValueOptions } from '../lib/typings';
 
 // Propsの型
 type WorkerGridProps = {
@@ -83,6 +86,49 @@ export function WorkerGrid(props:WorkerGridProps) {
     return updatedRow;
   };
 
+  const bgcolors:string[] = [
+    "lightpink",
+    "pink",
+    "lavenderblush",
+    "plum",
+    "thistle",
+    "avender",
+    "ghostwhite",
+    "lightsteelblue",
+    "lightblue",
+    "paleturquoise",
+    "aquamarine",
+    "lime",
+    "palegreen",
+    "greenyellow",
+    "khaki",
+    "gold",
+    "moccasin",
+    "peachpuff",
+    "coral",
+    "salmon",
+    "lightgrey",
+    "silver",
+  ];
+  // CSSのクラス生成
+  let sx = {
+       height: height-180,
+       width: '100%',
+  };
+  let clr=bgcolors.reduce((acc, value, index) => {
+    return { ...acc, ['& .'+value]: {backgroundColor:value} };
+  }, {} );
+  sx = {...sx,...clr};
+
+  // 背景色の選択肢
+  const getColorOptions = ()=>{
+    let options:IValueOptions[] = [];
+    bgcolors.map((color)=>{
+      options.push({value:color,label:color})
+    })
+    return options;
+  }
+
   /**
    * 行のモード変更
    */
@@ -117,11 +163,19 @@ export function WorkerGrid(props:WorkerGridProps) {
     {
       field: 'color',
       headerName: '色',
-      type: 'string',
       width: 150,
       align: 'left',
       headerAlign: 'left',
       editable: true,
+      type: 'singleSelect',
+      valueOptions: getColorOptions(),
+      cellClassName: (params: GridCellParams) => {
+        if (params.value == null) {
+          return '';
+        } else {
+          return clsx(params.value);
+        }
+      },
     },
     {
       field: 'actions',
@@ -169,16 +223,7 @@ export function WorkerGrid(props:WorkerGridProps) {
 
   return (
     <Box
-      sx={{
-        height: height-180,
-        width: '100%',
-        '& .actions': {
-          color: 'text.secondary',
-        },
-        '& .textPrimary': {
-          color: 'text.primary',
-        },
-      }}
+      sx={sx}
     >
         <StripedDataGrid
             rows={rows}

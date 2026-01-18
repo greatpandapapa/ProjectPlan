@@ -39,7 +39,6 @@ function Main() {
     setValue(newValue);
   };
 
-  console.log("main");
   if (!loaded) {
     let from:string = state["from"];
     if (from == "new") {
