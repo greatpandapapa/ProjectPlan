@@ -591,6 +591,10 @@ class CGppGanttCalUnitCalculator {
         }
         return null;
     }
+    // 日数差を計算する
+    protected getDiffDays(date1:Date,date2:Date):number {
+        return Math.floor(date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24);
+    }
 }
 
 // 月表示の場合
@@ -665,7 +669,7 @@ class CWeekGppGanttCalUnitCalculator extends CGppGanttCalUnitCalculator {
     // 開始-終了の間の日数計算
     public getPeriodNums():number {
         // 開始から終了までの日数を取得
-        const days = (this.dm.end_date.getTime() - this.dm.start_date.getTime()) / (1000 * 60 * 60 * 24);
+        const days = this.getDiffDays(this.dm.end_date,this.dm.start_date);
         const st_day = this.dm.start_date.getDay();
         const weeks = Math.floor(days + st_day)/7;
         // 5年以上なら5年にする
@@ -675,7 +679,7 @@ class CWeekGppGanttCalUnitCalculator extends CGppGanttCalUnitCalculator {
 
     // dayがstart_dayから何日目かを計算
     public getDayIndex(date:Date,opt:string=""):number {
-        let idx = (date.getTime() - this.dm.start_date.getTime()) / (1000 * 60 * 60 * 24);
+        let idx = this.getDiffDays(date,this.dm.start_date);
         return idx/7;
     }
 
@@ -723,7 +727,7 @@ class CDayGppGanttCalUnitCalculator extends CGppGanttCalUnitCalculator {
     // 開始-終了の間の日数計算
     public getPeriodNums():number {
         // 開始から終了までの日数を取得
-        const days = (this.dm.end_date.getTime() - this.dm.start_date.getTime()) / (1000 * 60 * 60 * 24);
+        const days = this.getDiffDays(this.dm.end_date,this.dm.start_date);
         // 2年以上なら2年を上限にする
         if (days > 365*2) return 365*2;
         return days;
@@ -731,7 +735,7 @@ class CDayGppGanttCalUnitCalculator extends CGppGanttCalUnitCalculator {
 
     // dayがstart_dayから何日目かを計算
     public getDayIndex(date:Date,opt:string=""):number {
-        let idx = (date.getTime() - this.dm.start_date.getTime()) / (1000 * 60 * 60 * 24);
+        let idx = this.getDiffDays(date,this.dm.start_date);
         if (opt == "end") {
             idx+=1;
         }

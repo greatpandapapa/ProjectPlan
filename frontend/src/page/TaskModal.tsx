@@ -163,21 +163,21 @@ export function EditTaskModal(props:EditTaskModalProps) {
                 </TextField>
               </Grid>
               <Grid size={6}>
-                <TextField id="master_milestone" name="master_milestone" select label="マスター" size="small" sx={{width:300}} 
-                 value={task.master_milestone}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  updateForm({...task,master_milestone:Number(event.target.value)});
-                }}>
-                {ValueOptionMenuItem(plan.getMasterPlanMileStoneValueOptions())}
-                </TextField>
-              </Grid>
-              <Grid size={6}>
                 <TextField id="type" name="type" label="タイプ" size="small" select sx={{width:200}}
                            value={task.type}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   updateForm({...task,type:event.target.value});
                 }}>
                 {ValueOptionMenuItem(plan.getTypeValueOptions())}
+                </TextField>
+              </Grid>
+              <Grid size={6}>
+                <TextField id="master_milestone" name="master_milestone" select label="マスター" size="small" sx={{width:300}} 
+                 value={task.master_milestone}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                  updateForm({...task,master_milestone:Number(event.target.value)});
+                }}>
+                {ValueOptionMenuItem(plan.getMasterPlanMileStoneValueOptions())}
                 </TextField>
               </Grid>
               <Grid size={3}>

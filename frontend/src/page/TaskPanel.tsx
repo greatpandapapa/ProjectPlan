@@ -238,6 +238,15 @@ export function TaskGrid(props:TaskGridProps) {
       editable: enable_editable,
     },
     {
+      field: 'memo',
+      headerName: '備考',
+      width: 150,
+      editable: enable_editable,
+      type: 'string',
+      disableColumnMenu: true,
+    },
+/*
+    {
       field: 'master_milestone',
       headerName: 'マスター',
       width: 150,
@@ -246,6 +255,7 @@ export function TaskGrid(props:TaskGridProps) {
       disableColumnMenu: true,
       valueOptions: plan.getMasterPlanMileStoneValueOptions(),
     },
+  */
     {
       field: 'actions',
       type: 'actions',
