@@ -121,7 +121,7 @@ export function GppDefaultConfig():IGppGanttConfig {
         default_diamond_stroke_color: "blue",
         default_level_bar_fill_color: "yellow",
         default_level_bar_stroke_color: "blue",
-        progress_fill_color: "gray",
+        progress_fill_color: "red",
         table_complete_bgcolor: "#cccccc",
         table_view: true,
         calendar_satday_bgcolor: "#DDFFFF",
