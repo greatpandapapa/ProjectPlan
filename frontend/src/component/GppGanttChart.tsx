@@ -192,8 +192,8 @@ class CGppGanttDataManager {
     public data:IGppGanttData[];
     public links:IGppGanttLink[];
 
-    public start_date: Date;
-    public end_date: Date;
+    public start_date: Date = new Date();
+    public end_date: Date = new Date();
 
     // モード
     public mode: typeof mode_list[keyof typeof mode_list] = "normal";
@@ -211,7 +211,7 @@ class CGppGanttDataManager {
     public label_align: typeof label_align_list[keyof typeof label_align_list] = "right";
 
     // 表示単位別の計算をまとめた計算モジュールを取得
-    private unit_culator:CGppGanttCalUnitCalculator;
+    private unit_culator:CGppGanttCalUnitCalculator = new CDayGppGanttCalUnitCalculator(this);
 
     // IDのインデックス
     private id_index:number[] = [];
@@ -228,47 +228,20 @@ class CGppGanttDataManager {
         this.columns = columns;
         this.data = data;
         this.links = links;
-
-        this.start_date = new Date();
-        this.end_date = new Date();
-
-        // セルの幅と高さ
-        this.w_mark = config.cell_day_width;
-        if (this.mode == "normal") {
-            this.h = config.cell_height;
-            this.label_align = config.label_align;
-        } else if (this.mode == "shrink")  {
-            this.h = config.cell_shrink_height;
-            this.label_align = "center";
-        } else {
-            throw new Error("Internal Error");
-        }
-        if (this.config.calendar_unit == "day") {
-            this.w = config.cell_day_width;
-            this.unit_culator = new CDayGppGanttCalUnitCalculator(this);;
-        } else if (this.config.calendar_unit == "week") {
-            this.w = config.cell_week_width;
-            this.unit_culator = new CWeekGppGanttCalUnitCalculator(this);
-        } else if (this.config.calendar_unit == "month") {
-            this.w = config.cell_month_width;
-            this.unit_culator = new CMOnthGppGanttCalUnitCalculator(this);
-        } else {
-            throw new Error("Internal Error");
-        }
     }
 
     // セットアップ
     public setup() {
-        // start_date,end_dateの設定
-        this._setStartEndDate();
-        // インデックス作成
-        this._makeIndex();
-        this._makeShrinkIndex();
-
-        // ガントチャートエリアの幅と高さ
-        this.width = (this.getPeriodNums() + 1) * this.w;
-        this.height = this.getMaxRows() * this.h;
-
+        // 表示モード
+        if (this.mode == "normal") {
+            this.h = this.config.cell_height;
+            this.label_align = this.config.label_align;
+        } else if (this.mode == "shrink")  {
+            this.h = this.config.cell_shrink_height;
+            this.label_align = "center";
+        } else {
+            throw new Error("Internal Error");
+        }
         // セルの幅
         if (this.config.cell_width_class == "standard") {
             this.config.cell_day_width = this.config.cell_day_width_standard;
@@ -278,7 +251,33 @@ class CGppGanttDataManager {
             this.config.cell_day_width = this.config.cell_day_width_narrow;
             this.config.cell_week_width = this.config.cell_week_width_narrow;
             this.config.cell_month_width = this.config.cell_month_width_narrow;
+        } else {
+            throw new Error("Internal Error");
         }
+        // セルの単位
+        this.w_mark = this.config.cell_day_width;
+        if (this.config.calendar_unit == "day") {
+            this.w = this.config.cell_day_width;
+            this.unit_culator = new CDayGppGanttCalUnitCalculator(this);;
+        } else if (this.config.calendar_unit == "week") {
+            this.w = this.config.cell_week_width;
+            this.unit_culator = new CWeekGppGanttCalUnitCalculator(this);
+        } else if (this.config.calendar_unit == "month") {
+            this.w = this.config.cell_month_width;
+            this.unit_culator = new CMOnthGppGanttCalUnitCalculator(this);
+        } else {
+            throw new Error("Internal Error");
+        }
+
+        // start_date,end_dateの設定
+        this._setStartEndDate();
+        // インデックス作成
+        this._makeIndex();
+        this._makeShrinkIndex();
+
+        // ガントチャートエリアの幅と高さ
+        this.width = (this.getPeriodNums() + 1) * this.w;
+        this.height = this.getMaxRows() * this.h;
     }
 
     // start_date,end_dateの設定
@@ -1087,8 +1086,7 @@ export function GppGanttChart(props:GppGanttChartProps) {
     const tableEl = useRef<HTMLDivElement>(null);
     const calendarEl = useRef<HTMLDivElement>(null);
 
-    // データマネージャ
-    let dm:CGppGanttDataManager = new CGppGanttDataManager(props.mode,props.config,props.columns,props.data,props.links);
+    let dm = new CGppGanttDataManager(props.mode,props.config,props.columns,props.data,props.links);
     dm.setup();
     let cal_width;
     if (dm.config.table_view == true){
