@@ -25,9 +25,13 @@ import {
   GridRowModes,
   GridRowModesModel,
   GridCellParams,
+  GridRenderEditCellParams,
+  useGridApiContext,
 } from '@mui/x-data-grid';
 import {StripedDataGrid} from '../component/CustomMui';
 import { IValueOptions } from '../lib/typings';
+import Select,{ SelectChangeEvent } from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 
 // Propsの型
 type WorkerGridProps = {
@@ -35,7 +39,38 @@ type WorkerGridProps = {
   WorkerRows: object[];
 }
 
-export function WorkerGrid(props:WorkerGridProps) {
+type BgColorEditComponentProps = {
+  params: GridRenderEditCellParams;
+  bgcolors: string[];
+}
+/**
+ * カラー選択カスタムコンポーネント
+ */
+function BgColorEditComponent(props: BgColorEditComponentProps) {
+  let menus:ReactElement[] = [];
+  props.bgcolors.map((color)=>{
+    menus.push(<MenuItem sx={{background:color}} value={color}>{color}</MenuItem>);
+  });
+  const apiRef = useGridApiContext();
+
+  const handleValueChange = (event: SelectChangeEvent) => {
+    const newValue = event.target.value;
+    apiRef.current.setEditCellValue({id:props.params.id, field:props.params.field, value: newValue});
+  };
+
+  return (
+    <Select 
+        id="bgcolor"
+        value={props.params.value} size="small" sx={{width:150}} onChange={handleValueChange}>
+        {menus}
+    </Select>
+  );
+}
+
+/**
+ * 作業者編集のGrid
+ */
+function WorkerGrid(props:WorkerGridProps) {
   const [width, height] = useWindowSize();
 
   const rows: GridRowsProp = props.WorkerRows; 
@@ -167,8 +202,11 @@ export function WorkerGrid(props:WorkerGridProps) {
       align: 'left',
       headerAlign: 'left',
       editable: true,
-      type: 'singleSelect',
-      valueOptions: getColorOptions(),
+//      type: 'singleSelect',
+//      valueOptions: getColorOptions(),
+      renderEditCell: (params: GridRenderEditCellParams) => (
+        <BgColorEditComponent params={params} bgcolors={bgcolors} />
+      ),
       cellClassName: (params: GridCellParams) => {
         if (params.value == null) {
           return '';
