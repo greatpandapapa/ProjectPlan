@@ -72,11 +72,12 @@ export interface IGppGanttConfig {
     cell_month_width_narrow: number;
     grid_boarder_color: string;
     default_bar_fill_color: string;
-    default_bar_stroke_color: string;
-    default_diamond_fill_color: string;
-    default_diamond_stroke_color: string;
-    default_level_bar_fill_color: string;
-    default_level_bar_stroke_color: string;
+    bar_stroke_color: string;
+    diamond_fill_color: string;
+    diamond_stroke_color: string;
+    level_bar_fill_color: string;
+    level_bar_stroke_color: string;
+    bar_rx: number;
     progress_fill_color:string;
     table_complete_bgcolor:string;
     table_view: boolean;
@@ -116,11 +117,12 @@ export function GppDefaultConfig():IGppGanttConfig {
         cell_month_width_narrow: 60,
         grid_boarder_color: "gainsboro",
         default_bar_fill_color: "lightskyblue",
-        default_bar_stroke_color: "blue",
-        default_diamond_fill_color: "purple",
-        default_diamond_stroke_color: "blue",
-        default_level_bar_fill_color: "yellow",
-        default_level_bar_stroke_color: "blue",
+        bar_stroke_color: "blue",
+        diamond_fill_color: "purple",
+        diamond_stroke_color: "blue",
+        level_bar_fill_color: "yellow",
+        level_bar_stroke_color: "blue",
+        bar_rx: 3,
         progress_fill_color: "red",
         table_complete_bgcolor: "#cccccc",
         table_view: true,
@@ -415,14 +417,14 @@ class CGppGanttDataManager {
             const row = this.data[index];
 
             if (row.level != 99) {
-                color = (row.bar_color !== undefined? row.bar_color : this.config.default_level_bar_fill_color);
-                st_color = (row.bar_stroke_color !== undefined? row.bar_stroke_color : this.config.default_level_bar_stroke_color);
+                color = (row.bar_color !== undefined? row.bar_color : this.config.level_bar_fill_color);
+                st_color = (row.bar_stroke_color !== undefined? row.bar_stroke_color : this.config.level_bar_stroke_color);
             } else if (row.duration === 0) {
-                color = this.config.default_diamond_fill_color;
-                st_color = this.config.default_diamond_stroke_color;
+                color = this.config.diamond_fill_color;
+                st_color = this.config.diamond_stroke_color;
             } else {
                 color = (row.bar_color !== undefined? row.bar_color : this.config.default_bar_fill_color);
-                st_color = (row.bar_stroke_color !== undefined? row.bar_stroke_color : this.config.default_bar_stroke_color);
+                st_color = (row.bar_stroke_color !== undefined? row.bar_stroke_color : this.config.bar_stroke_color);
             }
         }
         return {fill:color,stroke:st_color,progress:p_color};
@@ -592,7 +594,7 @@ class CGppGanttCalUnitCalculator {
     }
     // 日数差を計算する
     protected getDiffDays(date1:Date,date2:Date):number {
-        return Math.floor(date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24);
+        return Math.floor((date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24));
     }
 }
 
@@ -997,7 +999,7 @@ function GppSvgGanttChartBars(props:GppGanttChartInternalProps):ReactNode[] {
                 bars.push(GppSvgGanttChartDiamond(xs.x1+2,y+4,dm.w_mark-4,dm.h-4,colors.fill,colors.stroke,handleOnclick));
                 bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align,handleOnclick));
             } else {
-                bars.push(GppSvgGanttChartBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke,handleOnclick));
+                bars.push(GppSvgGanttChartBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke,dm.config.bar_rx,handleOnclick));
                 bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/2+4,xs.pw-4,dm.h/3-4,colors.progress,handleOnclick));
                 bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align,handleOnclick));
             }
@@ -1033,11 +1035,11 @@ function GppSvgGanttChartLevelBar(x:number,y:number,w:number,h:number,fill:strin
     points += String(x+w-6)+","+String(y+h-6)+" ";
     points += String(x+6)+","+String(y+h-6)+" ";
     points += String(x)+","+String(y+h)+" ";
-    return(<polygon onClick={handler} points={points} fill={fill} stroke={stroke} rx="5"></polygon>);
+    return(<polygon onClick={handler} points={points} fill={fill} stroke={stroke}></polygon>);
 }
 // バー
-function GppSvgGanttChartBar(x:number,y:number,w:number,h:number,fill:string,stroke:string,handler:()=>void) {
-    return(<rect onClick={handler} x={x} y={y} width={w} height={h} fill={fill} stroke={stroke} rx="5"></rect>);
+function GppSvgGanttChartBar(x:number,y:number,w:number,h:number,fill:string,stroke:string,rx:number,handler:()=>void) {
+    return(<rect onClick={handler} x={x} y={y} width={w} height={h} fill={fill} stroke={stroke} rx={rx}></rect>);
 }
 // プログレスバー
 function GppSvgGanttChartProgressBar(x:number,y:number,w:number,h:number,fill:string,handler:()=>void) {
