@@ -482,9 +482,9 @@ export class CTaskList {
 //        console.log("----step1----");
 //        this._printID();
         if (destance < 0) {
-            this._moveScheduLastleToDest(target_id,worker_id,true)
+            this._moveTaskLastleToDest(target_id,worker_id,true)
         } else if (destance > 0) {
-            this._moveScheduLastleToDest(target_id,worker_id,false)
+            this._moveTaskLastleToDest(target_id,worker_id,false)
         }
 //        console.log("----after----");
 //        this._printID();
@@ -580,7 +580,7 @@ export class CTaskList {
      * 
      * @param target_id  移動対象のスケジュールID
      */
-    public _moveScheduLastleToDest(target_id:number,worker_id:number,before:boolean) {
+    public _moveTaskLastleToDest(target_id:number,worker_id:number,before:boolean) {
         const target_last_id = this.getGroupEndId(target_id);
 //        console.log(target_last_id);
         // targetが最後でなければ何もしない

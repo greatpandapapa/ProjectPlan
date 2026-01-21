@@ -506,7 +506,7 @@ export class CPlan {
             let link_type:string = rows[i].link_type;
             if (rows[i].link_type != "" && link_id !== null &&
                 (link_type == "s2s" || link_type == "s2e" || link_type == "e2s" || link_type == "e2e")) {
-                links.push({ id: no, source: link_id, target: rows[i].id, type: link_type });
+                links.push({ id: no, source: rows[i].id, target: link_id, type: link_type });
                 no++;
             }
         }
