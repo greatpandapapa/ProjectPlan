@@ -29,6 +29,7 @@ import {
   GridRowParams,
   GridApi
 } from '@mui/x-data-grid';
+import { format } from "date-fns";
 
 import {StripedDataGrid, StripedDataGridByGroup} from '../component/CustomMui';
 
@@ -178,6 +179,12 @@ export function TaskGrid(props:TaskGridProps) {
       align: 'left',
       headerAlign: 'center',
       editable: enable_editable,
+      valueFormatter: (value) => {
+        if (value) {
+          return format(value, 'yyyy-MM-dd');
+        }
+        return '';
+      },
     },
     {
       field: 'end_date2',
@@ -187,6 +194,12 @@ export function TaskGrid(props:TaskGridProps) {
       align: 'left',
       headerAlign: 'center',
       editable: enable_editable,
+      valueFormatter: (value) => {
+        if (value) {
+          return format(value, 'yyyy-MM-dd');
+        }
+        return '';
+      },
     },
     {
       field: 'duration',
