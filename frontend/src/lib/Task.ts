@@ -178,8 +178,15 @@ export class CTaskList {
             sc.no = no++;
             sc.order_grp_id = sc.id;
             // レベル用グループ
-            if (sc.level == 0) level0_grp_id = sc.id;
-            if (sc.level == 1) level1_grp_id = sc.id;
+            if (sc.level == 0) {
+                level0_grp_id = sc.id;
+                level1_grp_id = 0;
+                level2_grp_id = 0;
+            }
+            if (sc.level == 1) {
+                level1_grp_id = sc.id;
+                level2_grp_id = 0;
+            }
             if (sc.level == 2) level2_grp_id = sc.id;
             sc.level0_grp_id = level0_grp_id;
             sc.level1_grp_id = level1_grp_id;

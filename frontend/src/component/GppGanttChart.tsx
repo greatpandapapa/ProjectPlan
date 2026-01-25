@@ -93,8 +93,9 @@ export interface IGppGanttConfig {
     link_line_color: string;
     label_align: typeof label_align_list[keyof typeof label_align_list];
     holidaies: string[];
-    level_indent: number;
-    leve2_indent: number;
+    levell_indent: number;
+    level2_indent: number;
+    level99_indent: number;
     date_format: string;
     date_year_format: string;
     date_year_month_format: string;
@@ -139,8 +140,9 @@ export function GppDefaultConfig():IGppGanttConfig {
         link_line_color: "red",
         label_align: "right",
         holidaies: [],
-        level_indent: 3,
-        leve2_indent: 6,
+        levell_indent: 4,
+        level2_indent: 8,
+        level99_indent: 12,
         date_format: "yyyy-MM-dd",
         date_year_format: "yyyy",
         date_year_month_format: "yyyy/MM",
@@ -463,15 +465,15 @@ class CGppGanttDataManager {
     getNameIndent(row:IGppGanttData,id:string):number {
         if (id == "name") {
             if (row.level == 0) return 0;
-            else if (row.level == 1) return this.config.level_indent;
-            else if (row.level == 2) return this.config.leve2_indent;
-            else return this.config.level_indent*2;
+            else if (row.level == 1) return this.config.levell_indent;
+            else if (row.level == 2) return this.config.level2_indent;
+            else return this.config.level99_indent;
         }
         return 0;
     }
     // オープン・クローズ
     getOpenClose(row:IGppGanttData,id:string):null|boolean {
-        if (id == "name" && (row.level == 0 || row.level == 1 || row.level == 3)) {
+        if (id == "name" && (row.level == 0 || row.level == 1 || row.level == 2)) {
             if (row.id >= 1000) return null;
             if (row.open === undefined) {
                 return true;

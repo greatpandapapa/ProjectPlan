@@ -680,10 +680,13 @@ class TableFilter {
             }
             if (this.rows[i].level == 0) {
                 level0_open = (this.rows[i].open === undefined || this.rows[i].open == true)?true:false;
+                level1_open = true;
+                level2_open = true;
                 pre_level0_grp_id = this.rows[i].level0_grp_id;
             }
             if (this.rows[i].level == 1) {
                 level1_open = (this.rows[i].open === undefined || this.rows[i].open == true)?true:false;
+                level2_open = true;
                 pre_level1_grp_id = this.rows[i].level1_grp_id;
             }
             if (this.rows[i].level == 2) {

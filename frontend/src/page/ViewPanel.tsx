@@ -111,11 +111,11 @@ function ViewPanel() {
     if (props.row.level == 0) {
       level_margin = 0;
     } else if (props.row.level == 1) {
-      level_margin = 3;
+      level_margin = 5;
     } else if (props.row.level == 2) {
-      level_margin = 6;
+      level_margin = 10;
     } else {
-      level_margin = 9;
+      level_margin = 15;
     }
     if (props.row.level == 0 || props.row.level == 1 || props.row.level == 2) {
       if (props.row.open) {
