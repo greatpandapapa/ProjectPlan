@@ -17,6 +17,9 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { styled } from '@mui/material/styles';
 import { format } from "date-fns";
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import {IconButton} from '@mui/material';
 
 /**
  * 月末のDateオブジェクトを取得
@@ -91,6 +94,7 @@ export interface IGppGanttConfig {
     label_align: typeof label_align_list[keyof typeof label_align_list];
     holidaies: string[];
     level_indent: number;
+    leve2_indent: number;
     date_format: string;
     date_year_format: string;
     date_year_month_format: string;
@@ -123,7 +127,7 @@ export function GppDefaultConfig():IGppGanttConfig {
         level_bar_fill_color: "yellow",
         level_bar_stroke_color: "blue",
         bar_rx: 3,
-        progress_fill_color: "red",
+        progress_fill_color: "gray",
         table_complete_bgcolor: "#cccccc",
         table_view: true,
         calendar_satday_bgcolor: "#DDFFFF",
@@ -135,7 +139,8 @@ export function GppDefaultConfig():IGppGanttConfig {
         link_line_color: "red",
         label_align: "right",
         holidaies: [],
-        level_indent: 4,
+        level_indent: 3,
+        leve2_indent: 6,
         date_format: "yyyy-MM-dd",
         date_year_format: "yyyy",
         date_year_month_format: "yyyy/MM",
@@ -169,6 +174,7 @@ export interface IGppGanttData {
     progress?: number;
     bar_color?: string;
     bar_stroke_color?: string;
+    open?:boolean;
 }
 // リンクタイプ
 const link_type_list = {
@@ -458,9 +464,23 @@ class CGppGanttDataManager {
         if (id == "name") {
             if (row.level == 0) return 0;
             else if (row.level == 1) return this.config.level_indent;
+            else if (row.level == 2) return this.config.leve2_indent;
             else return this.config.level_indent*2;
         }
         return 0;
+    }
+    // オープン・クローズ
+    getOpenClose(row:IGppGanttData,id:string):null|boolean {
+        if (id == "name" && (row.level == 0 || row.level == 1 || row.level == 3)) {
+            if (row.id >= 1000) return null;
+            if (row.open === undefined) {
+                return true;
+            } else {
+                return row.open;
+            }
+        } else {
+            return null;
+        }
     }
 
     // カラムの値を取得
@@ -837,6 +857,28 @@ function GppGanttTableBody(props:GppGanttChartInternalProps) {
         return "";
     }
 
+    function openCloseArrow(row:IGppGanttData,col_id:string):ReactNode {
+        if (props.changeOpenClose === undefined) {
+            return (<></>);
+        }
+        let open:null|boolean = dm.getOpenClose(row,col_id);
+        let arrow:ReactNode;
+        if (open === null) {
+            return (<></>);
+        } else if (open == true) {
+            arrow = <ArrowDropDownIcon/>;
+        } else {
+            arrow = <ArrowRightIcon/>;
+        }
+        return (<IconButton disableRipple={true} sx={{margin:0,padding:0}} size="small" onClick={(event)=>{
+            if (props.changeOpenClose !== undefined) {
+                if (open !== null) props.changeOpenClose(row.id,!open);
+            }
+            // イベント伝搬をキャンセル
+            event.stopPropagation();
+        }}>{arrow}</IconButton>);
+    } 
+
     return (
       <Table>
         <TableBody>
@@ -852,7 +894,7 @@ function GppGanttTableBody(props:GppGanttChartInternalProps) {
                                         onClick={(event) => {
                                             if (props.onClickTask !== undefined) props.onClickTask(dm.getValueByColId(row,"id"));
                                         }}>
-                            <Box sx={{marginLeft:dm.getNameIndent(row,col.id),padding:0}}>{dm.getValueByColId(row,col.id)}</Box>
+                            <Box sx={{marginLeft:dm.getNameIndent(row,col.id),padding:0}}>{openCloseArrow(row,col.id)}{dm.getValueByColId(row,col.id)}</Box>
                         </GanttTableCell>
                         );
                     })}
@@ -992,7 +1034,7 @@ function GppSvgGanttChartBars(props:GppGanttChartInternalProps):ReactNode[] {
             if (xs.level != 99) {
                 if (! dm.isShrinkMode()) {
                     bars.push(GppSvgGanttChartLevelBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke,handleOnclick));
-                    bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/4+2,xs.pw-4,dm.h/2-4,colors.progress,handleOnclick));
+                    bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/4+4,xs.pw-4,dm.h/3-4,colors.progress,handleOnclick));
                     bars.push(GppSvgGanttChartLabel(lxs.x,y+dm.h/2,lxs.text,lxs.align,handleOnclick));
                 }
             } else if (xs.duration === 0) {
@@ -1073,11 +1115,13 @@ export type GppGanttChartProps = {
     data: IGppGanttData[],
     links: IGppGanttLink[],
     onClickTask?: (id:string)=>void,       // タスクをクリックしたときに呼ばれるオールバック
+    changeOpenClose?: (id:number,open:boolean)=>void     // オープン・クローズ
 }
 
 type GppGanttChartInternalProps = {
     dm: CGppGanttDataManager;
     onClickTask?: (id:string)=>void,       // タスクをクリックしたときに呼ばれるオールバック
+    changeOpenClose?: (id:number,open:boolean)=>void     // オープン・クローズ
 }
 
 
@@ -1115,7 +1159,7 @@ export function GppGanttChart(props:GppGanttChartProps) {
                 <Box ref={tableEl} onScroll={()=>{handleScroll(true)}} sx={{width:400,overflowY:'auto',overflowX:"scroll",height:props.height}}>
                     <Stack direction={"column"} spacing={0}>
                         <GppGanttTableHeader dm={dm}/>
-                        <GppGanttTableBody dm={dm} onClickTask={props.onClickTask} />
+                        <GppGanttTableBody dm={dm} onClickTask={props.onClickTask} changeOpenClose={props.changeOpenClose}/>
                     </Stack>
                 </Box>):(<></>)}
                 <Box ref={calendarEl} onScroll={()=>{handleScroll(false)}} sx={{width:cal_width ,overflow: 'auto',height:props.height}} >

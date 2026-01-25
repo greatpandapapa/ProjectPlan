@@ -35,6 +35,7 @@ export interface ITask extends IBaseListItem {
     ticket_no: string;
     link_type: string;
     link_id: null|number;
+    open?: boolean;
 }
 export interface IWorker extends IBaseListItem {
     id: number;
@@ -71,9 +72,12 @@ declare module '*.json' {
 
 export interface ITaskRows extends ITask {
     no: number;
-    grp_id: number;
     start_date2: Date;
     end_date2: Date;
+    order_grp_id: number;
+    level0_grp_id: number;
+    level1_grp_id: number;
+    level2_grp_id: number;
 }
 
 export interface ITaskTable  extends ITaskRows {

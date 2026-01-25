@@ -28,7 +28,8 @@
             "progress":0,
             "ticket_no": "",
             "link_type": "",
-            "link_id": null
+            "link_id": null,
+            "open": true
         }
     ],
     "worker": [],

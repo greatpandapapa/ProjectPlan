@@ -14,6 +14,7 @@ import {API,ILoadDataResponse} from "../lib/Api";
 import {plan} from "../lib/Plan";
 import {DataJson} from "../lib/typings";
 import {useLocation} from "react-router-dom";
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CardTravelIcon from '@mui/icons-material/CardTravel';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
@@ -21,8 +22,10 @@ import TourIcon from '@mui/icons-material/Tour';
 import SaveIcon from '@mui/icons-material/Save';
 import GradingIcon from '@mui/icons-material/Grading';
 import FlagIcon from '@mui/icons-material/Flag';
+import SortIcon from '@mui/icons-material/Sort';
 import HomeRepairServiceIcon from '@mui/icons-material/HomeRepairService';
 import ChecklistRtlIcon from '@mui/icons-material/ChecklistRtl';
+import EngineeringIcon from '@mui/icons-material/Engineering';
 import MyAppBar from "../component/MyAppBar";
 import ViewPanel from './ViewPanel';
 import MasterViewPanel from './MasterViewPanel';
@@ -76,13 +79,13 @@ function Main() {
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <TabList onChange={handleChange} aria-label="Main Tabs">
               <Tab icon={<CardTravelIcon />} iconPosition="start" label={convMobileText("計画")} value="plan" sx={{...tag_style, bgcolor: '#e0ffff'}} />
-              <Tab icon={<CalendarMonthIcon />} iconPosition="start" label={convMobileText("タスク編集")} value="taskedit"  sx={{...tag_style, bgcolor: '#f0f8ff'}}/>
+              <Tab icon={<AssignmentIcon />} iconPosition="start" label={convMobileText("タスク編集")} value="taskedit"  sx={{...tag_style, bgcolor: '#f0f8ff'}}/>
               <Tab icon={<ChecklistRtlIcon />} iconPosition="start" label={convMobileText("タスク一覧")} value="taskview"  sx={{...tag_style, bgcolor: '#99FFFF'}}/>
-              <Tab icon={<GradingIcon />} iconPosition="start" label={convMobileText("ガントチャート")} value="ganttchart"  sx={{...tag_style, bgcolor: '#fce1fc'}}/>
+              <Tab icon={<SortIcon />} iconPosition="start" label={convMobileText("ガントチャート")} value="ganttchart"  sx={{...tag_style, bgcolor: '#fce1fc'}}/>
               <Tab icon={<FlagIcon />} iconPosition="start" label={convMobileText("マスタ計画")} value="master"  sx={{...tag_style, bgcolor: '#CCFFCC'}}/>
               <Tab icon={<SwapVertIcon />} iconPosition="start" label={convMobileText("順序変更")} value="tasksort"  sx={{...tag_style, bgcolor: '#e6e6fa'}}/>
-              <Tab icon={<TourIcon />} iconPosition="start" label={convMobileText("作業者")} value="worker"  sx={{...tag_style, bgcolor: '#FFDEAD'}}/>
-              <Tab icon={<TourIcon />} iconPosition="start" label={convMobileText("休日設定")} value="holiday"  sx={{...tag_style, bgcolor: '#ffffe0'}}/>
+              <Tab icon={<EngineeringIcon />} iconPosition="start" label={convMobileText("作業者")} value="worker"  sx={{...tag_style, bgcolor: '#FFDEAD'}}/>
+              <Tab icon={<CalendarMonthIcon />} iconPosition="start" label={convMobileText("休日設定")} value="holiday"  sx={{...tag_style, bgcolor: '#ffffe0'}}/>
               <Tab icon={<SaveIcon />} iconPosition="start" label={convMobileText("保存")} value="save"  sx={{...tag_style, bgcolor: '#f8fbf8'}}/>
             </TabList>
           </Box>

@@ -33,7 +33,7 @@ export function MyAppBar() {
           >
             <MenuIcon />
           </IconButton>
-        Project Plan<Box fontSize={12} sx={{ paddingLeft: 1 }}>  - Let's make good plan - Ver.{config.version}</Box>
+        Project Plan<Box fontSize={12} sx={{ paddingLeft: 1 }}>  - Let's make a good plan - Ver.{config.version}</Box>
       </Toolbar>
     </AppBar>
   );

@@ -49,8 +49,8 @@ export class CPlan {
             {value:'equipment',label:"設備",}
         ];
     static level_options: IValueOptions[] = [
-            {value:0,label:"TOP",},
-            {value:1,label:"SUB"},
+            {value:1,label:"TOP",},
+            {value:2,label:"SUB"},
             {value:99,label:""},
         ];
     static auto_options: IValueOptions[] = [
@@ -368,23 +368,6 @@ export class CPlan {
     }
 
     /**
-     * levelのValueOptions
-     */
-    public getParentIdValueOptions():IValueOptions[] {
-        let values:IValueOptions[] = [];
-        let sc: ITask;
-        let grp_ids:number[] = [];
-        values.push({value:"",label:""});
-        this.tasks.getTaskRows().map((row)=>{
-            if (! grp_ids.includes(row.grp_id)) {
-                grp_ids.push(row.grp_id);
-                values.push({value:row.id,label:String(row.id)});
-            }
-        });
-        return values;
-    }
-
-    /**
      * リンクタイプのValueOptions
      */
     public getLinkTypeValueOptions():IValueOptions[] {
@@ -445,7 +428,7 @@ export class CPlan {
         let data:IGppGanttData[] = [];
         let dd: IGppGanttData;
         if (this._masterplan !== null) {
-            data.push({id:1000,name:"マスター",level:0});
+            data.push({id:1000,name:"マスター",level:1});
             this.getMasterMilestoneRows().map((row:ITaskRows)=>{
                 dd = {
                     id: row.id,
@@ -454,6 +437,7 @@ export class CPlan {
                     duration: row.duration,
                     name: row.name,
                     level: 99,
+                    open: true,
                 };
                 data.push(dd);
             }); 
@@ -467,6 +451,7 @@ export class CPlan {
                 name: row.name,
                 level: row.level,
                 progress: row.progress,
+                open: row.open,
             };
             if (row.worker_id !== null && row.worker.color != "") {
                 dd.bar_color = row.worker.color;
@@ -514,7 +499,7 @@ export class CPlan {
     }
 
     /**
-     * テーブル出力用のObjectを作る
+     * 一覧表示用のテーブルを出力する
      */
     public getTableRows():ITaskTable[] {
         let rows: ITaskTable[] = [];
@@ -579,22 +564,22 @@ export class CPlan {
     }
 
     /**
-     * テーブル出力用のObjectを作る
+     * 順序変更用のテーブルを州津力
      */
     public getNestedTableRows():ITaskNestedTable[] {
         let nrows:ITaskNestedTable[] = [];
         const rows:ITaskTable[] = this.getTableRows();
         // グループの個数を数える
-        let pre_grp_id:number = rows[0].grp_id;
+        let pre_order_grp_id:number = rows[0].order_grp_id;
         let grp_count:number = 0;
         let grp_head_id:number =  rows[0].id;
         let grp_rows:ITaskTable[] = [];
         for(let i = 0; i < rows.length; i++) {
-            if (pre_grp_id != rows[i].grp_id) {
-                nrows.push({id:pre_grp_id, count:grp_count, head_id:grp_head_id, rows:grp_rows});
+            if (pre_order_grp_id != rows[i].order_grp_id) {
+                nrows.push({id:pre_order_grp_id, count:grp_count, head_id:grp_head_id, rows:grp_rows});
                 grp_rows = [];
                 grp_rows.push(rows[i]);
-                pre_grp_id = rows[i].grp_id;
+                pre_order_grp_id = rows[i].order_grp_id;
                 grp_head_id = rows[i].id;
                 grp_count = 1;
             } else {
@@ -602,7 +587,7 @@ export class CPlan {
                 grp_count++;
             }
         }
-        nrows.push({id:pre_grp_id, count:grp_count, head_id:grp_head_id, rows:grp_rows});
+        nrows.push({id:pre_order_grp_id, count:grp_count, head_id:grp_head_id, rows:grp_rows});
         return nrows;
     }
 
@@ -660,7 +645,52 @@ class TableFilter {
      * フィルタ
      */
     do() {
+        this._delCloseGroup();
         return this.rows;
+    }
+
+    /**
+     * クローズされたグループを削除する
+     */
+    private _delCloseGroup() {
+        let level0_open:boolean = true;
+        let pre_level0_grp_id:number = -1;
+        let level1_open:boolean = true;
+        let pre_level1_grp_id:number = -1;
+        let level2_open:boolean = true;
+        let pre_level2_grp_id:number = -1;
+        let flg:boolean;
+        for (let i=0;i < this.rows.length;i++) {
+            flg = false;
+            if ((!level0_open && this.rows[i].level0_grp_id == pre_level0_grp_id)) {
+                flg = true;
+            } else {
+                if (!level1_open && this.rows[i].level1_grp_id == pre_level1_grp_id) {
+                    flg = true;
+                } else {
+                    if (!level2_open && this.rows[i].level2_grp_id == pre_level2_grp_id) {
+                        flg = true;
+                    }
+               }
+            }
+            if (flg) {
+                this.rows.splice(i,1);
+                i--;
+                continue;
+            }
+            if (this.rows[i].level == 0) {
+                level0_open = (this.rows[i].open === undefined || this.rows[i].open == true)?true:false;
+                pre_level0_grp_id = this.rows[i].level0_grp_id;
+            }
+            if (this.rows[i].level == 1) {
+                level1_open = (this.rows[i].open === undefined || this.rows[i].open == true)?true:false;
+                pre_level1_grp_id = this.rows[i].level1_grp_id;
+            }
+            if (this.rows[i].level == 2) {
+                level2_open = (this.rows[i].open === undefined || this.rows[i].open == true)?true:false;
+                pre_level2_grp_id = this.rows[i].level2_grp_id;
+            }
+        }
     }
 }
 

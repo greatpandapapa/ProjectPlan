@@ -1,4 +1,4 @@
-import {useState,memo} from 'react';
+import {useState,memo,ReactNode, ReactElement} from 'react';
 import { plan,CPlan } from '../lib/Plan';
 import {ITaskTable} from '../lib/typings';
 import Table from '@mui/material/Table';
@@ -18,13 +18,16 @@ import Grid from '@mui/material/Grid';
 import { Link } from '@mui/material';
 import {EditTaskModal} from './TaskModal';
 import EditIcon from '@mui/icons-material/Edit';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import {IconButton} from '@mui/material';
 
 /**
  * タスク一覧パネル
  */
 function ViewPanel() {
   const [width, height] = useWindowSize();
-  const rows = plan.getTableRows(); 
+  const [rows,setRows] = useState(plan.getTableRows());
 
   // 編集モーダル用
   const [open, setOpen] = useState(false);
@@ -32,6 +35,10 @@ function ViewPanel() {
   // 編集モーダルを閉じる
   const handleClose = () => {
     setOpen(false);
+  }
+  //
+  function updateRows() {
+    setRows(plan.getTableRows());
   }
 
   /**
@@ -61,7 +68,7 @@ function ViewPanel() {
         </TableHead>
         <TableBody>
           {rows.map((row) => { 
-            const ret = (<TaskTableRow key={row.id} row={row} pre_date={pre_date}/>);
+            const ret = (<TaskTableRow key={row.id} row={row} pre_date={pre_date} updateRows={updateRows}/>);
             return (ret);
           })}
         </TableBody>
@@ -73,6 +80,7 @@ function ViewPanel() {
   type TaskTableRowProps = {
     row:ITaskTable;
     pre_date:string;
+    updateRows: ()=>void;
   };
 
   /**
@@ -97,19 +105,36 @@ function ViewPanel() {
 
   const TaskSlimTableCells = ((props:TaskTableRowProps) => {
     let level_margin:number;
+    let arrow:null|ReactNode;
+
+    // レベル
     if (props.row.level == 0) {
       level_margin = 0;
     } else if (props.row.level == 1) {
-      level_margin = 5;
+      level_margin = 3;
+    } else if (props.row.level == 2) {
+      level_margin = 6;
     } else {
-      level_margin = 10;
+      level_margin = 9;
     }
-
+    if (props.row.level == 0 || props.row.level == 1 || props.row.level == 2) {
+      if (props.row.open) {
+        arrow = (<ArrowDropDownIcon/>);
+      } else {
+//        arrow = (<ArrowDropDownIcon fontSize="small"  onClick={changeLevelOopen(true)} />);
+        arrow = (<ArrowRightIcon/>);
+      }
+    } else {
+      arrow = null;
+    }
     return (
       <>
       <SlimTableCell align="center">{props.row.id}</SlimTableCell>
       <SlimTableCell align="left">
-         <Box sx={{marginLeft:level_margin,padding:0}}>{props.row.name}</Box>
+         <Box sx={{marginLeft:level_margin,padding:0}}><IconButton disableRipple={true} sx={{margin:0,padding:0}} size="small" onClick={()=>{
+            plan.tasks.changeOpen(props.row.id,!props.row.open);
+            props.updateRows();
+          }}>{arrow}</IconButton>{props.row.name}</Box>
       </SlimTableCell>
       <SlimTableCell align="center">{props.row.start_date}</SlimTableCell>
       <SlimTableCell align="center">{props.row.end_date}</SlimTableCell>

@@ -167,14 +167,23 @@ export class CTaskList {
         let rows: CTask[] = [];
 
         let no:number = 1;
-        let grp_id: number = 0;
+        let level0_grp_id: number = 0;
+        let level1_grp_id: number = 0;
+        let level2_grp_id: number = 0;
 
         const sorted_idx = this._getSortedIndex();
         for(let i=0;i<sorted_idx.length;i++) {
             let idx:number = sorted_idx[i];
             sc = this.task[idx];
             sc.no = no++;
-            sc.grp_id = sc.id;
+            sc.order_grp_id = sc.id;
+            // レベル用グループ
+            if (sc.level == 0) level0_grp_id = sc.id;
+            if (sc.level == 1) level1_grp_id = sc.id;
+            if (sc.level == 2) level2_grp_id = sc.id;
+            sc.level0_grp_id = level0_grp_id;
+            sc.level1_grp_id = level1_grp_id;
+            sc.level2_grp_id = level2_grp_id;
             rows.push(sc);
         }
 
@@ -187,24 +196,12 @@ export class CTaskList {
         for(let i = rows.length-2; i > 0; i--) {
             rows[i].setDatePost(rows[i+1]);
         }
-        // grp_idを1番から付け直す
-        let pre_grp_id = rows[0].grp_id;
-        grp_id = 1;
-        rows[0].grp_id = grp_id;
         // level=TOP/SUBの調整
         let top_idx:null|number = null;
         let top_cnt:number = 0;
         let sub_idx:null|number = null;
         let sub_cnt:number = 0;
         for(let i = 0; i < rows.length; i++) {
-            if (i > 0) {
-                // grp_idをつける
-                if (pre_grp_id != rows[i].grp_id) {
-                    grp_id++;
-                    pre_grp_id = rows[i].grp_id;
-                }
-                rows[i].grp_id = grp_id;
-            }
             // TOP/SUBの更新
             if (rows[i].level == 0) {
                 top_idx = i;
@@ -822,6 +819,17 @@ export class CTaskList {
     }
 
     /**
+     * オープン/クローズを変更
+     */
+    public changeOpen(id:number,open:boolean):void {
+        let idx = this._getIndexById(id);
+        if (idx == null) {
+            throw new Error("can't get task:"+id);
+        }
+        this.task[idx].open = open;
+    }
+
+    /**
      * セーブ用データを作成
      */
     public getSaveData() {
@@ -842,7 +850,8 @@ export class CTaskList {
                 progress: sc.progress,
                 ticket_no: sc.ticket_no,
                 link_type: sc.link_type,
-                link_id: sc.link_id
+                link_id: sc.link_id,
+                open: sc.open
             });
         }
         return rows;
@@ -874,9 +883,13 @@ export class CTask implements ITask {
     ticket_no: string;
     link_type: string;
     link_id: null|number;
+    open: boolean;
     //
     no: number;
-    grp_id: number;
+    order_grp_id: number;
+    level0_grp_id: number;
+    level1_grp_id: number;
+    level2_grp_id: number;
 
     constructor(plan:CPlan, data: ITask) {
         this.plan = plan;
@@ -899,10 +912,18 @@ export class CTask implements ITask {
         this.ticket_no = data.ticket_no;
         this.link_type = data.link_type;
         this.link_id = data.link_id;
+        if (data.open === undefined) {
+            this.open = true;
+        } else {
+            this.open = data.open;
+        }
 
         // 付加情報
         this.no = 0;
-        this.grp_id = 0;
+        this.order_grp_id = 0;
+        this.level0_grp_id = 0;
+        this.level1_grp_id = 0;
+        this.level2_grp_id = 0;
 
         this.fixDate();
     }
@@ -970,7 +991,7 @@ export class CTask implements ITask {
                 this.end_date2 =  this._getDateOfDuration(this.start_date2,this.duration,"add1base",this.type);
                 this.start_date = toDateString(this.start_date2);
                 this.end_date = toDateString(this.end_date2);
-                this.grp_id = pre_task.grp_id;
+                this.order_grp_id = pre_task.order_grp_id;
             } else {
                 this.start_date_auto = "normal";
             }
@@ -986,7 +1007,7 @@ export class CTask implements ITask {
             this.start_date2 = this._getDateOfDuration(this.end_date2,this.duration,"sub1base",this.type);
             this.start_date = toDateString(this.start_date2);
             this.end_date = toDateString(this.end_date2);
-            this.grp_id = post_task.grp_id;
+            this.order_grp_id = post_task.order_grp_id;
         }
     }
 

@@ -41,6 +41,9 @@ function SelectScale(props:SelectScaleProps) {
 }
 
 function GppGanttPanel() {
+    // データ
+    const [data,setData] = useState(plan.getGppGanttData());
+    const links = plan.getGppGanttLinks();
     // 単位・幅
     const [mode,setMode] = useState<string>("normal");
     const [unit,setUnit] = useState<string>("day");
@@ -52,11 +55,10 @@ function GppGanttPanel() {
     const handleOpen = () => setOpen(true);
     // 編集モーダルを閉じる
     const handleClose = () => {
+        setData(plan.getGppGanttData());
         setOpen(false);
     }
 
-    const data = plan.getGppGanttData();
-    const links = plan.getGppGanttLinks();
 
     const config:IGppGanttConfig = GppDefaultConfig();
     config.holidaies = plan.holidaies.getDays();
@@ -84,6 +86,12 @@ function GppGanttPanel() {
         }
     }
 
+    // オープンクローズ
+    function changeOpenClose(id:number,open:boolean) {
+        plan.tasks.changeOpen(id,open);
+        setData(plan.getGppGanttData());
+    }
+
     // ガントチャートの高さと幅
     const size = useWindowSize();
     const width = size[0];
@@ -92,7 +100,7 @@ function GppGanttPanel() {
     return (
         <Paper sx={{ width: '100%', overflow: 'hidden', margin: "1px" }}>
             <SelectScale mode={mode} setMode={setMode} unit={unit} setUnit={setUnit} width_class={width_class} setWidth={setWidthClass}/>
-            <GppGanttChart mode={mode} width={width} height={height} config={config} columns={columns} data={data} links={links} onClickTask={clickTask}/>
+            <GppGanttChart mode={mode} width={width} height={height} config={config} columns={columns} data={data} links={links} onClickTask={clickTask} changeOpenClose={changeOpenClose}/>
             <EditTaskModal 
                 open={open}
                 handleClose={handleClose} 
