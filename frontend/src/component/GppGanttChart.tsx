@@ -7,7 +7,7 @@
  * @author GreatPandaPapa
  * @homepage https://github.com/greatpandapapa
  */
-import {useState,memo,ReactNode,useRef,createContext,useContext} from 'react';
+import {useState,memo,ReactNode,useRef,createContext,useContext,useEffect} from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import {IconButton} from '@mui/material';
+import { getTodayDate } from '@mui/x-date-pickers/internals';
 
 /**
  * 月末のDateオブジェクトを取得
@@ -101,6 +102,7 @@ export interface IGppGanttConfig {
     date_year_month_format: string;
     date_month_format: string;
     date_day_format: string;
+    calendar_today_offset: number;
 }
 
 // デフォルトのデフォルト値
@@ -148,6 +150,7 @@ export function GppDefaultConfig():IGppGanttConfig {
         date_year_month_format: "yyyy/MM",
         date_month_format: "MM",
         date_day_format: "dd",
+        calendar_today_offset: -100,
     };
 }
 
@@ -381,6 +384,13 @@ class CGppGanttDataManager {
     // リンク個数を取得
     getLinkLength():number {
         return this.links.length;
+    }
+
+    // 今日のX座標を取得する
+    getTodayX() {
+        const day = this.unit_culator.getDayIndex(new Date);
+        let x = day*this.w + this.config.calendar_today_offset;
+        return (x < 0)? 0: x;
     }
 
     // Y座標を取得
@@ -1153,6 +1163,13 @@ export function GppGanttChart(props:GppGanttChartProps) {
             }
         }
     }
+
+    // 今日の日付にスクロール
+    useEffect(() => {
+        if (tableEl.current != null && calendarEl.current != null ) {
+            calendarEl.current.scrollLeft = dm.getTodayX();
+        }
+    }, []);
   
     return (
         <Stack direction={"column"} spacing={0.5}>

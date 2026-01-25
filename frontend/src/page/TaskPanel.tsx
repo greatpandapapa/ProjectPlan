@@ -133,12 +133,33 @@ export function TaskGrid(props:TaskGridProps) {
   let enable_editable:boolean;
   enable_editable = true;
 
+  // ウィンドウ幅から各カラムの幅を算出
+  const width_1440 = {
+    id: 50, 
+    level: 80,
+    name: 250,
+    start_date_auto: 60,
+    start_date2: 100, 
+    end_date2: 100, 
+    duration:80, 
+    type: 100, 
+    worker_id: 150, 
+    progress: 100, 
+    ticket_no: 80, 
+    memo: 150, 
+    actions: 100
+  };
+  //
+  function getWidth(col_width:number) {
+    return Math.floor(col_width/(1440/width));
+  }
+
   // 列の定義
   const columns: GridColDef[] = [
     {
       field: 'id', 
       headerName: 'ID', 
-      width: 50, 
+      width: getWidth(width_1440.id), 
       editable: false,
       disableColumnMenu: true,
     },
@@ -146,7 +167,7 @@ export function TaskGrid(props:TaskGridProps) {
       field: 'level',
       headerName: 'Level',
       type: 'singleSelect',
-      width: 80,
+      width: getWidth(width_1440.level), 
       align: 'center',
       headerAlign: 'center',
       editable: enable_editable,
@@ -155,7 +176,7 @@ export function TaskGrid(props:TaskGridProps) {
     {
       field: 'name',
       headerName: '作業名',
-      width: 250,
+      width: getWidth(width_1440.name), 
       editable: enable_editable,
       type: 'string',
       headerAlign: 'center',
@@ -164,7 +185,7 @@ export function TaskGrid(props:TaskGridProps) {
       field: 'start_date_auto',
       headerName: '連結',
       type: 'singleSelect',
-      width: 60,
+      width: getWidth(width_1440.start_date_auto), 
       align: 'center',
       headerAlign: 'center',
       editable: enable_editable,
@@ -175,8 +196,8 @@ export function TaskGrid(props:TaskGridProps) {
       field: 'start_date2',
       headerName: '開始日',
       type: 'date',
-      width: 100,
-      align: 'left',
+      width: getWidth(width_1440.start_date2), 
+      align: 'center',
       headerAlign: 'center',
       editable: enable_editable,
       valueFormatter: (value) => {
@@ -190,8 +211,8 @@ export function TaskGrid(props:TaskGridProps) {
       field: 'end_date2',
       headerName: '終了日',
       type: 'date',
-      width: 100,
-      align: 'left',
+      width: getWidth(width_1440.end_date2), 
+      align: 'center',
       headerAlign: 'center',
       editable: enable_editable,
       valueFormatter: (value) => {
@@ -205,7 +226,7 @@ export function TaskGrid(props:TaskGridProps) {
       field: 'duration',
       headerName: '日数',
       type: 'number',
-      width: 80,
+      width: getWidth(width_1440.duration), 
       align: 'right',
       headerAlign: 'center',
       disableColumnMenu: true,
@@ -214,7 +235,7 @@ export function TaskGrid(props:TaskGridProps) {
     {
       field: 'type',
       headerName: 'タイプ',
-      width: 100,
+      width: getWidth(width_1440.type), 
       align: 'center',
       headerAlign: 'center',
       editable: enable_editable,
@@ -224,7 +245,7 @@ export function TaskGrid(props:TaskGridProps) {
     {
       field: 'worker_id',
       headerName: '作業者',
-      width: 150,
+      width: getWidth(width_1440.worker_id), 
       headerAlign: 'center',
       editable: enable_editable,
       type: 'singleSelect',
@@ -233,7 +254,7 @@ export function TaskGrid(props:TaskGridProps) {
     {
       field: 'progress',
       headerName: '進捗率',
-      width: 100,
+      width: getWidth(width_1440.progress), 
       align: 'right',
       headerAlign: 'center',
       editable: enable_editable,
@@ -244,7 +265,7 @@ export function TaskGrid(props:TaskGridProps) {
       field: 'ticket_no',
       headerName: 'チケット',
       type: 'string',
-      width: 80,
+      width: getWidth(width_1440.ticket_no), 
       align: 'center',
       headerAlign: 'center',
       disableColumnMenu: true,
@@ -253,7 +274,7 @@ export function TaskGrid(props:TaskGridProps) {
     {
       field: 'memo',
       headerName: '備考',
-      width: 150,
+      width: getWidth(width_1440.memo), 
       editable: enable_editable,
       type: 'string',
       disableColumnMenu: true,
@@ -273,7 +294,7 @@ export function TaskGrid(props:TaskGridProps) {
       field: 'actions',
       type: 'actions',
       headerName: 'Actions',
-      width: 100,
+      width: getWidth(width_1440.actions), 
       cellClassName: 'actions',
       getActions: ({ id }) => {
         const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;

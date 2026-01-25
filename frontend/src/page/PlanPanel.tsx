@@ -30,20 +30,27 @@ function PlanPanel() {
     const [ticket_url,setTicketUrl] = useState<string>(plan.ticket_url);
     const [loaded,setLoaded] = useState<boolean>(false);
     const [masterList,setMasterList] = useState<(null|string)[]>([]);
+    const [history,setHistory] = useState<IgetHistoryRow[]>([]);
 
     if (!loaded) {
+        let master_list:(null|string)[] = [];
+        let history_list:IgetHistoryRow[];
         const p1 = API.getList((response: IgetListResponse)=>{
             let row:IgetListRow;
-            let master_list:(null|string)[] = [null];
             for (row of response.result) {
                 if (row.name != plan.name) {
                     master_list.push(row.name);
                 }
             }
+        });
+        const p2 = API.getHistory(name,(response: IgetHistoryResponse)=>{
+            history_list = response.result;
+        });
+        Promise.all([p1,p2]).then(()=>{
             setMasterList(master_list);
+            setHistory(history_list);
             setLoaded(true);
         });
-
         return (<>loading...</>);  
     }
     
@@ -131,29 +138,22 @@ function PlanPanel() {
                 </Grid>
             </Grid>
             <ReferenceList edit={true}/>
-            <LoadOldVersion name={name} loaded={setLoaded}/>
+            <LoadOldVersion name={name} history={history} loaded={setLoaded}/>
         </Box>
     );
 }
 type LoadOldVersionProps = {
     name: string;
+    history: IgetHistoryRow[];
     loaded: (flg:boolean)=>void;
 }
 /**
  * 過去リビジョンの読み込み
  */
 function LoadOldVersion(props:LoadOldVersionProps) {
-    let navigate = useNavigate();
-//    const [loaded,setLoaded] = useState<boolean>(false);
-    const [history,setHistory] = useState<null|IgetHistoryRow[]>(null);
-    const [rev,setRev] = useState<string>("")
-
-    if (history === null) {
-        API.getHistory(props.name,(response: IgetHistoryResponse)=>{
-            setHistory(response.result);
-            setRev(response.result[0].rev)
-        });
-        return (<></>);  
+    const [rev,setRev] = useState<string>("");
+    if (rev == "" && props.history.length > 0) {
+        setRev(props.history[0].rev);
     }
 
     return (
@@ -165,7 +165,7 @@ function LoadOldVersion(props:LoadOldVersionProps) {
                     onChange={(event) => {
                         setRev(event.target.value);
                     }}>
-                    {history.map((row)=>{
+                    {props.history.map((row)=>{
                         return (<MenuItem value={row.rev}>Rev {row.rev}({row.update_date})</MenuItem>)
                     })}
                 </Select>
@@ -176,7 +176,7 @@ function LoadOldVersion(props:LoadOldVersionProps) {
                     API.loadData(props.name,rev,(response)=>{
                         plan.load(((response as unknown) as ILoadDataResponse).result.data as DataJson);
                         plan.loadMasterPlan();
-                        plan.old_version = true;;
+                        plan.old_version = true;
                         props.loaded(false);
                     });   
                 }}>Load</Button>

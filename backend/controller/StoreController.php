@@ -50,7 +50,6 @@ class StoreController extends Controller {
         } else {
             return new WarnningResponse(["mesg"=>"_templateというファイル名では保存できません"],2);
         }
-        return new SuccessResponse();     
     }
 
     // ロードする
