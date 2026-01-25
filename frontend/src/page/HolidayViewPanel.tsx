@@ -12,6 +12,7 @@ import {useWindowSize} from '../component/useWindowsSize';
 import { Link } from 'react-router-dom';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
+import { format } from "date-fns";
 
 import {
   GridRowsProp,
@@ -107,6 +108,12 @@ export function HolidayGrid(props:HolidayGridProps) {
       align: 'left',
       headerAlign: 'left',
       editable: true,
+      valueFormatter: (value) => {
+        if (value) {
+          return format(value, 'yyyy-MM-dd');
+        }
+        return '';
+      },
     },
     {
       field: 'actions',
