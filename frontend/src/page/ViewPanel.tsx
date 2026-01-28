@@ -34,9 +34,10 @@ function ViewPanel() {
   const [task_id, setTaskId] = useState<number>(0);
   // 編集モーダルを閉じる
   const handleClose = () => {
+    updateRows();
     setOpen(false);
   }
-  //
+  // テーブル更新
   function updateRows() {
     setRows(plan.getTableRows());
   }
