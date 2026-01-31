@@ -21,6 +21,7 @@ import { toDateString,toDateTimeString,getTodayDateString,getTodayDateTimeString
 import {ITask,ILink} from "@svar-ui/react-gantt"; 
 // GppGantt
 import {IGppGanttData,IGppGanttLink} from "../component/GppGanttChart";
+import {LEVEL} from "../component/GppGanttChart";
 
 // 日付の曜日を日本語にするため
 dayjs.locale(ja);
@@ -49,9 +50,9 @@ export class CPlan {
             {value:'equipment',label:"設備",}
         ];
     static level_options: IValueOptions[] = [
-            {value:1,label:"TOP",},
-            {value:2,label:"SUB"},
-            {value:99,label:""},
+            {value:LEVEL.TOP,label:"TOP",},
+            {value:LEVEL.SUB,label:"SUB"},
+            {value:LEVEL.NORMAL,label:""},
         ];
     static auto_options: IValueOptions[] = [
             {value:"normal",label:"通常"},
@@ -428,7 +429,7 @@ export class CPlan {
         let data:IGppGanttData[] = [];
         let dd: IGppGanttData;
         if (this._masterplan !== null) {
-            data.push({id:1000,name:"マスター",level:1});
+            data.push({id:1000,name:"マスター",level:LEVEL.TOP});
             this.getMasterMilestoneRows().map((row:ITaskRows)=>{
                 dd = {
                     id: row.id,
@@ -436,7 +437,7 @@ export class CPlan {
                     end_date: row.end_date2,
                     duration: row.duration,
                     name: row.name,
-                    level: 99,
+                    level: LEVEL.NORMAL,
                     open: true,
                 };
                 data.push(dd);
@@ -678,18 +679,18 @@ class TableFilter {
                 i--;
                 continue;
             }
-            if (this.rows[i].level == 0) {
+            if (this.rows[i].level == LEVEL.FILE) {
                 level0_open = (this.rows[i].open === undefined || this.rows[i].open == true)?true:false;
                 level1_open = true;
                 level2_open = true;
                 pre_level0_grp_id = this.rows[i].level0_grp_id;
             }
-            if (this.rows[i].level == 1) {
+            if (this.rows[i].level == LEVEL.TOP) {
                 level1_open = (this.rows[i].open === undefined || this.rows[i].open == true)?true:false;
                 level2_open = true;
                 pre_level1_grp_id = this.rows[i].level1_grp_id;
             }
-            if (this.rows[i].level == 2) {
+            if (this.rows[i].level == LEVEL.SUB) {
                 level2_open = (this.rows[i].open === undefined || this.rows[i].open == true)?true:false;
                 pre_level2_grp_id = this.rows[i].level2_grp_id;
             }

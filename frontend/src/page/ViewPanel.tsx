@@ -21,6 +21,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import {IconButton} from '@mui/material';
+import {LEVEL} from "../component/GppGanttChart";
 
 /**
  * タスク一覧パネル
@@ -109,16 +110,16 @@ function ViewPanel() {
     let arrow:null|ReactNode;
 
     // レベル
-    if (props.row.level == 0) {
+    if (props.row.level == LEVEL.FILE) {
       level_margin = 0;
-    } else if (props.row.level == 1) {
+    } else if (props.row.level == LEVEL.TOP) {
       level_margin = 5;
-    } else if (props.row.level == 2) {
+    } else if (props.row.level == LEVEL.SUB) {
       level_margin = 10;
     } else {
       level_margin = 15;
     }
-    if (props.row.level == 0 || props.row.level == 1 || props.row.level == 2) {
+    if (props.row.level == LEVEL.FILE || props.row.level == LEVEL.TOP || props.row.level == LEVEL.SUB) {
       if (props.row.open) {
         arrow = (<ArrowDropDownIcon/>);
       } else {

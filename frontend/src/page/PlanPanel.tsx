@@ -108,7 +108,7 @@ function PlanPanel() {
                       }}/>
                 </Grid>
                 <Grid size={12}>
-                    <TextField label="目的" multiline rows={3} fullWidth size="small" value={purpose}
+                    <TextField label="説明" multiline rows={3} fullWidth size="small" value={purpose}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         plan.purpose = event.target.value;
                         setPurpose(plan.purpose);}}/>

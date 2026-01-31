@@ -15,6 +15,7 @@ import { isInvalidDate } from "./Common";
 import { toDateString,toDateTimeString,getTodayDateString,getTodayDateTimeString } from "./Common";
 import {CPlan} from "./Plan";
 import { CHolidayList } from './Holiday';
+import {LEVEL} from "../component/GppGanttChart";
 
 /**
  * スケジュールのリストを管理するクラス
@@ -100,7 +101,9 @@ export class CTaskList {
                         break;
                     case"level":
                         if (isNaN(Number(value))) continue; // 数値フォーマットチェック
-                        sc.level = Number(value);
+                        const level:number = Number(value);
+                        if (!(level == LEVEL.TOP || level == LEVEL.SUB || level == LEVEL.NORMAL)) continue; 
+                        sc.level = level;
                         break;
                     case"progress":
                         if (isNaN(Number(value))) continue; // 数値フォーマットチェック
@@ -167,32 +170,26 @@ export class CTaskList {
         let rows: CTask[] = [];
 
         let no:number = 1;
-        let level0_grp_id: number = 0;
         let level1_grp_id: number = 0;
         let level2_grp_id: number = 0;
 
         const sorted_idx = this._getSortedIndex();
-        for(let i=0;i<sorted_idx.length;i++) {
-            let idx:number = sorted_idx[i];
+        sorted_idx.map((idx)=>{
             sc = this.task[idx];
             sc.no = no++;
             sc.order_grp_id = sc.id;
             // レベル用グループ
-            if (sc.level == 0) {
-                level0_grp_id = sc.id;
-                level1_grp_id = 0;
-                level2_grp_id = 0;
-            }
-            if (sc.level == 1) {
+            if (sc.level == LEVEL.TOP) {
                 level1_grp_id = sc.id;
                 level2_grp_id = 0;
             }
-            if (sc.level == 2) level2_grp_id = sc.id;
-            sc.level0_grp_id = level0_grp_id;
+            if (sc.level == LEVEL.SUB) {
+                level2_grp_id = sc.id;
+            }
             sc.level1_grp_id = level1_grp_id;
             sc.level2_grp_id = level2_grp_id;
             rows.push(sc);
-        }
+        })
 
         // autoの時間計算（前）
         for(let i = 0; i < rows.length; i++) {
@@ -205,26 +202,26 @@ export class CTaskList {
         }
         // level=TOP/SUBの調整
         let top_idx:null|number = null;
-        let top_cnt:number = 0;
+        let top_flg:boolean = true;
         let sub_idx:null|number = null;
-        let sub_cnt:number = 0;
-        for(let i = 0; i < rows.length; i++) {
+        let sub_flg:boolean = true;
+        for(let i=0;i<rows.length;i++) {
             // TOP/SUBの更新
-            if (rows[i].level == 0) {
+            if (rows[i].level == LEVEL.TOP) {
                 top_idx = i;
-                top_cnt = 0;
+                top_flg = true;
                 sub_idx = null;
-            } else if (rows[i].level == 1) {
+            } else if (rows[i].level == LEVEL.SUB) {
                 sub_idx = i;
-                sub_cnt = 0;
+                sub_flg = true;
             } else {
                 if (top_idx !== null) {
-                    rows[top_idx].updateTopDate(rows[i],top_cnt);
-                    top_cnt++;
+                    rows[top_idx].updateTopDate(rows[i],top_flg);
+                    top_flg = false;
                 }
                 if (sub_idx !== null) {
-                    rows[sub_idx].updateTopDate(rows[i],sub_cnt);
-                    sub_cnt++;
+                    rows[sub_idx].updateTopDate(rows[i],sub_flg);
+                    sub_flg = false;
                 }
             }
         }
@@ -353,7 +350,7 @@ export class CTaskList {
             "master_milestone": null,
             "worker_id": null,
             "memo": "",
-            "level": 99,
+            "level": LEVEL.NORMAL,
             "progress": 0,
             "ticket_no": "",
             "link_type": "",
@@ -993,7 +990,7 @@ export class CTask implements ITask {
      */
     public setDatePre(pre_task:CTask) {
         if (this.start_date_auto == "pre") {
-            if (pre_task.level == 99) {
+            if (pre_task.level == LEVEL.NORMAL) {
                 this.start_date2 = this._getDateOfDuration(pre_task.end_date2,1,"add");
                 this.end_date2 =  this._getDateOfDuration(this.start_date2,this.duration,"add1base",this.type);
                 this.start_date = toDateString(this.start_date2);
@@ -1047,10 +1044,10 @@ export class CTask implements ITask {
      * Level=99以外なら、配下のtaskの範囲にstart_date/end_dateを書き換える
      * 
      * @param current_task 現在のタスク
-     * @param cnt 何番目のデータが
+     * @param init_flg trueなら最初は初期設定する
      */
-    public updateTopDate(current_task:CTask,cnt:number) {
-        if (cnt == 0) { // 最初のデータなら
+    public updateTopDate(current_task:CTask,init_flg:boolean) {
+        if (init_flg) { // 最初のデータなら
             this.start_date = current_task.start_date;
             this.end_date = current_task.end_date;
             this.start_date2 = new Date(this.start_date);
@@ -1062,7 +1059,7 @@ export class CTask implements ITask {
                 this.start_date = current_task.start_date;
                 this.start_date2 = new Date(this.start_date);
             }
-            if (this.start_date2 < current_task.start_date2) {
+            if (this.end_date2 < current_task.end_date2) {
                 this.end_date = current_task.end_date;
                 this.end_date2 = new Date(this.end_date);                            
             }

@@ -20,7 +20,17 @@ import { format } from "date-fns";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import {IconButton} from '@mui/material';
-import { getTodayDate } from '@mui/x-date-pickers/internals';
+import dayjs from 'dayjs';
+
+/**
+ * レベルの値定義
+ */
+export class LEVEL {
+    static FILE:number = 0;
+    static TOP:number = 1;
+    static SUB:number = 2;
+    static NORMAL:number = 99;
+}
 
 /**
  * 月末のDateオブジェクトを取得
@@ -94,9 +104,9 @@ export interface IGppGanttConfig {
     link_line_color: string;
     label_align: typeof label_align_list[keyof typeof label_align_list];
     holidaies: string[];
-    levell_indent: number;
-    level2_indent: number;
-    level99_indent: number;
+    level_top_indent: number;
+    level_sub_indent: number;
+    level_normal_indent: number;
     date_format: string;
     date_year_format: string;
     date_year_month_format: string;
@@ -142,9 +152,9 @@ export function GppDefaultConfig():IGppGanttConfig {
         link_line_color: "red",
         label_align: "right",
         holidaies: [],
-        levell_indent: 4,
-        level2_indent: 8,
-        level99_indent: 12,
+        level_top_indent: 4,
+        level_sub_indent: 8,
+        level_normal_indent: 12,
         date_format: "yyyy-MM-dd",
         date_year_format: "yyyy",
         date_year_month_format: "yyyy/MM",
@@ -318,7 +328,7 @@ class CGppGanttDataManager {
         if (this.config.end !== null ) {
             this.end_date = this.config.end;
         } else {
-            this.end_date = new Date(max_date.getTime());
+            this.end_date = dayjs(max_date).add(10,"d").toDate();
         }
         // 開始・終了日の調整
         this._ajustStartEndDate();
@@ -350,7 +360,7 @@ class CGppGanttDataManager {
             let l:number = 0;
             this.shrink_index = [];
             for (let i:number = 0; i < this.getDataLength(); i++) {
-                if (i!=0 && this.data[i].level != 99) l++;
+                if (i!=0 && this.data[i].level != LEVEL.NORMAL) l++;
                 this.shrink_index[i] = l;
             }
         }
@@ -434,7 +444,7 @@ class CGppGanttDataManager {
         if (this.data[index] !== undefined) {
             const row = this.data[index];
 
-            if (row.level != 99) {
+            if (row.level != LEVEL.NORMAL) {
                 color = (row.bar_color !== undefined? row.bar_color : this.config.level_bar_fill_color);
                 st_color = (row.bar_stroke_color !== undefined? row.bar_stroke_color : this.config.level_bar_stroke_color);
             } else if (row.duration === 0) {
@@ -474,16 +484,16 @@ class CGppGanttDataManager {
     // 作業名のインデント
     getNameIndent(row:IGppGanttData,id:string):number {
         if (id == "name") {
-            if (row.level == 0) return 0;
-            else if (row.level == 1) return this.config.levell_indent;
-            else if (row.level == 2) return this.config.level2_indent;
-            else return this.config.level99_indent;
+            if (row.level == LEVEL.FILE) return 0;
+            else if (row.level == LEVEL.TOP) return this.config.level_top_indent;
+            else if (row.level == LEVEL.SUB) return this.config.level_sub_indent;
+            else return this.config.level_normal_indent;
         }
         return 0;
     }
     // オープン・クローズ
     getOpenClose(row:IGppGanttData,id:string):null|boolean {
-        if (id == "name" && (row.level == 0 || row.level == 1 || row.level == 2)) {
+        if (id == "name" && (row.level == LEVEL.FILE || row.level == LEVEL.TOP || row.level == LEVEL.SUB)) {
             if (row.id >= 1000) return null;
             if (row.open === undefined) {
                 return true;
@@ -895,7 +905,7 @@ function GppGanttTableBody(props:GppGanttChartInternalProps) {
       <Table>
         <TableBody>
           {dm.data.map((row) => { 
-                if (dm.isShrinkMode() && row.level == 99) {
+                if (dm.isShrinkMode() && row.level == LEVEL.NORMAL) {
                   return (<></>);
                 } else {
                   return (
@@ -1043,7 +1053,7 @@ function GppSvgGanttChartBars(props:GppGanttChartInternalProps):ReactNode[] {
             // バーの色
             let colors = dm.getColorsByIndex(i);
             // バーの描画
-            if (xs.level != 99) {
+            if (xs.level != LEVEL.NORMAL) {
                 if (! dm.isShrinkMode()) {
                     bars.push(GppSvgGanttChartLevelBar(xs.x1,y+dm.h/4,xs.w,dm.h/2,colors.fill,colors.stroke,handleOnclick));
                     bars.push(GppSvgGanttChartProgressBar(xs.x1+2,y+dm.h/4+4,xs.pw-4,dm.h/3-4,colors.progress,handleOnclick));

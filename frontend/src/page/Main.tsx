@@ -13,7 +13,7 @@ import WorkerPanel from './WorkerPanel';
 import {API,ILoadDataResponse} from "../lib/Api";
 import {plan} from "../lib/Plan";
 import {DataJson} from "../lib/typings";
-import {useLocation} from "react-router-dom";
+import {useLocation,useSearchParams,useNavigate} from "react-router-dom";
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CardTravelIcon from '@mui/icons-material/CardTravel';
@@ -36,14 +36,34 @@ import {config,convMobileText} from "../lib/Config"
 function Main() {
   const [value, setValue] = React.useState('plan');
   const [loaded,setLoaded] = React.useState<boolean>(false);
-  const { state } = useLocation();
+  const {state} = useLocation();
+  const [search,setSearch] = useSearchParams();
+  const navigate = useNavigate();
 
-  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
-    setValue(newValue);
-  };
+  let from:string = "";
+  let name:string = "";
+  if (state === null) {
+    if (search.has("from")) {
+      let from2:null|string = search.get("from");
+      if (from2 != null) {
+        from = from2;
+      }
+    }
+    if (search.has("name")) {
+      let name2:null|string = search.get("name");
+      if (name2 != null) {
+        name = name2;
+      }
+    }
+  } else {
+    from = state["from"];
+    name = state["name"];
+  }
+  if (from == "") {
+    navigate('/');
+  }
 
   if (!loaded) {
-    let from:string = state["from"];
     if (from == "new") {
       plan.loadTemplateData();
       setLoaded(true);
@@ -57,7 +77,6 @@ function Main() {
       plan.loadCSVData(filename,(csv as string[][]));
       setLoaded(true);
     } else if (from == "server") {
-      let name:string = state["name"];
       API.loadData(name,"",(response)=>{
         plan.load(((response as unknown) as ILoadDataResponse).result.data as DataJson);
         plan.loadMasterPlan();
@@ -68,6 +87,10 @@ function Main() {
 
     return (<>loading...</>);  
   }
+
+  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
+    setValue(newValue);
+  };
 
   const tag_style = {borderRadius: '6px',minWidth:"32px",minHeight: config.icon_hight, height: config.icon_hight }
 

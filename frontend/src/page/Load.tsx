@@ -131,7 +131,7 @@ function ListServerFile() {
         return (
             <TableRow>
               <TableCell align="left">
-                <Link to={"/main"} state={{from:"server",name:row.name}}>{row.name}</Link>
+                <Link to={{pathname:"/main",search:'?from=server&name='+encodeURI(row.name)}}>{row.name}</Link>
               </TableCell>
               <TableCell align="left">{row.title}</TableCell>
               <TableCell align="left">{row.purpose}</TableCell>
