@@ -9,10 +9,13 @@ import AppBar from '@mui/material/AppBar';
 import Grid from '@mui/material/Grid';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import {ValueOptionMenuItem} from '../component/CustomMui';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 import {
     ITask,
@@ -35,7 +38,7 @@ export function EditTaskModal(props:EditTaskModalProps) {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: 620,
+    width: 700,
     height: 380,
     bgcolor: 'background.paper',
     border: '2px solid #000',
@@ -93,13 +96,13 @@ export function EditTaskModal(props:EditTaskModalProps) {
                 </TextField>
               </Grid>
               <Grid size={10}>
-                <TextField id="name" name="name" label="作業名" size="small" sx={{width:500}} value={task.name}
+                <TextField id="name" name="name" label="作業名" size="small" sx={{width:570}} value={task.name}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   updateForm({...task,name:event.target.value});
                 }}>
                 </TextField>
               </Grid>
-              <Grid size={4}>
+              <Grid size={3}>
                 <DatePicker name="start_date2" label="開始日" format="YYYY-MM-DD"
                             value={dayjs(task.start_date2)}
                            disabled={disable_fields.start_date}
@@ -109,7 +112,7 @@ export function EditTaskModal(props:EditTaskModalProps) {
                   }
                 }} />
               </Grid>
-              <Grid size={4}>
+              <Grid size={3}>
                 <DatePicker name="end_date2" label="終了日" format="YYYY-MM-DD"
                             value={dayjs(task.end_date2)}
                            disabled={disable_fields.end_date}
@@ -135,6 +138,17 @@ export function EditTaskModal(props:EditTaskModalProps) {
                 }}>
                 {ValueOptionMenuItem(plan.getAutoValueOptions())}
                 </TextField>
+              </Grid>
+              <Grid size={2}>
+                <FormControlLabel  
+                  control={
+                   <Checkbox checked={task.fulltime} name="fulltime" size="small"
+                     onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                       updateForm({...task,fulltime:event.target.checked});
+                    }}/>
+                  }
+                  label="休日稼働"
+                />
               </Grid>
               <Grid size={6}>
                 <TextField id="worker_id" name="worker_id" select label="作業者" size="small" sx={{width:300}} 
@@ -200,7 +214,7 @@ export function EditTaskModal(props:EditTaskModalProps) {
               <Grid size={5}>
               </Grid>
               <Grid size={12}>
-                <TextField id="memo" name="memo" label="備考" size="small" sx={{width:600}} value={task.memo}
+                <TextField id="memo" name="memo" label="備考" size="small" sx={{width:680}} value={task.memo}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   updateForm({...task,memo:event.target.value});
                 }}>

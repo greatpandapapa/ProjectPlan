@@ -29,7 +29,8 @@
             "ticket_no": "",
             "link_type": "",
             "link_id": null,
-            "open": true
+            "open": true,
+            "fulltime": false
         }
     ],
     "worker": [],

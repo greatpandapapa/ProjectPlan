@@ -354,7 +354,9 @@ export class CTaskList {
             "progress": 0,
             "ticket_no": "",
             "link_type": "",
-            "link_id": null
+            "link_id": null,
+            "fulltime": false,
+            "open": true
         };
     }
 
@@ -855,6 +857,7 @@ export class CTaskList {
                 ticket_no: sc.ticket_no,
                 link_type: sc.link_type,
                 link_id: sc.link_id,
+                fulltime: sc.fulltime,
                 open: sc.open
             });
         }
@@ -888,6 +891,7 @@ export class CTask implements ITask {
     link_type: string;
     link_id: null|number;
     open: boolean;
+    fulltime: boolean;
     //
     no: number;
     order_grp_id: number;
@@ -921,6 +925,11 @@ export class CTask implements ITask {
         } else {
             this.open = data.open;
         }
+        if (data.fulltime === undefined) {
+            this.fulltime = false;
+        } else {
+            this.fulltime = data.fulltime;
+        }
 
         // 付加情報
         this.no = 0;
@@ -941,7 +950,7 @@ export class CTask implements ITask {
         this.end_date2 = new Date(data.end_date);
         this.duration = data.duration;
         this.type = data.type;
-        this.name =data.name;
+        this.name = data.name;
         this.master_milestone = data.master_milestone;
         this.worker_id = data.worker_id;
         this.memo = data.memo;
@@ -951,6 +960,9 @@ export class CTask implements ITask {
         this.ticket_no = data.ticket_no;
         this.link_type = data.link_type;
         this.link_id = data.link_id;
+        if (data.fulltime !== undefined) {
+            this.fulltime = data.fulltime;
+        }
 
         this.fixDate();
     }
@@ -971,7 +983,7 @@ export class CTask implements ITask {
      */
     public setDateStartEnd(holidaies:CHolidayList) {
         if (this.start_date_auto == "startend") {
-            this.duration = holidaies.getDuration(this.start_date2,this.end_date2,this.type);
+            this.duration = holidaies.getDuration(this.start_date2,this.end_date2,this.fulltime);
         }
     }
 
@@ -980,7 +992,7 @@ export class CTask implements ITask {
      */
     public setDateNormal() {
         if (this.start_date_auto == "normal") {
-            this.end_date2 = this._getDateOfDuration(new Date(this.start_date),this.duration,"add1base",this.type);
+            this.end_date2 = this._getDateOfDuration(new Date(this.start_date),this.duration,"add1base");
             this.end_date = toDateString(this.end_date2);
         }
     }
@@ -991,8 +1003,8 @@ export class CTask implements ITask {
     public setDatePre(pre_task:CTask) {
         if (this.start_date_auto == "pre") {
             if (pre_task.level == LEVEL.NORMAL) {
-                this.start_date2 = this._getDateOfDuration(pre_task.end_date2,1,"add",this.type);
-                this.end_date2 =  this._getDateOfDuration(this.start_date2,this.duration,"add1base",this.type);
+                this.start_date2 = this._getDateOfDuration(pre_task.end_date2,1,"add");
+                this.end_date2 =  this._getDateOfDuration(this.start_date2,this.duration,"add1base");
                 this.start_date = toDateString(this.start_date2);
                 this.end_date = toDateString(this.end_date2);
                 this.order_grp_id = pre_task.order_grp_id;
@@ -1008,7 +1020,7 @@ export class CTask implements ITask {
     public setDatePost(post_task:CTask) {
         if (this.start_date_auto == "post") {
             this.end_date2 = this._getDateOfDuration(post_task.start_date2,1,"sub");
-            this.start_date2 = this._getDateOfDuration(this.end_date2,this.duration,"sub1base",this.type);
+            this.start_date2 = this._getDateOfDuration(this.end_date2,this.duration,"sub1base");
             this.start_date = toDateString(this.start_date2);
             this.end_date = toDateString(this.end_date2);
             this.order_grp_id = post_task.order_grp_id;
@@ -1018,7 +1030,7 @@ export class CTask implements ITask {
     /**
      * durationを加算・原産した日付を取得する
      */
-    private _getDateOfDuration(date:Date,duration:number,op:string,type:string=""):Date {
+    private _getDateOfDuration(date:Date,duration:number,op:string):Date {
         let d:number;
         if (op == "add1base" || op == "sub1base") {
             d = (duration > 0 ? duration - 1 : 0);
@@ -1026,13 +1038,13 @@ export class CTask implements ITask {
             d = duration;
         }
         if (op == "add" || op == "add1base") {
-            if (type == "fulltime") {
+            if (this.fulltime == true) {
                 return dayjs(date).add(d,"d").toDate();
             } else {
                 return this.plan.holidaies.getNextWorkday(date,d,"forward");
             }
         } else {
-            if (type == "fulltime") {
+            if (this.fulltime == true) {
                 return dayjs(date).subtract(d,"d").toDate();
             } else {
                 return this.plan.holidaies.getNextWorkday(date,d,"back");

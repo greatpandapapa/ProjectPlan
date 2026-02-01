@@ -19,8 +19,10 @@ import { styled } from '@mui/material/styles';
 import { format } from "date-fns";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
 import {IconButton} from '@mui/material';
 import dayjs from 'dayjs';
+import { isMobile } from "react-device-detect";
 
 /**
  * レベルの値定義
@@ -837,22 +839,52 @@ const GanttTableCell = styled(TableCell)({
   paddingRight: 2,
 })
 
+type GppGanttChartTableHeaderProps = {
+    dm: CGppGanttDataManager;
+    hideTable: boolean,
+    changeHideTable: (hide:boolean)=>void
+} 
 
 /**
  * ガントチャートのテーブル部分のヘッダー部
  */
-function GppGanttTableHeader(props:GppGanttChartInternalProps) {
+function GppGanttTableHeader(props:GppGanttChartTableHeaderProps ) {
     const {dm} = props;
-    
+
+    // テーブルの表示・非表示トグル
+    const hideToggleTable = ()=>{
+        let arrow:ReactNode;
+        if (props.hideTable == true) {
+            arrow = <ArrowRightIcon/>;
+        } else {
+            arrow = <ArrowLeftIcon/>;
+        }
+        return (
+          <IconButton disableRipple={true} sx={{margin:0,padding:0}} size="small"
+           onClick={(event)=>{
+                props.changeHideTable(!props.hideTable);
+            }}
+            >{arrow}</IconButton>
+        )
+    }
+
+    // 表示・非表示で表示する列を変える
+    let columns = dm.columns;
+    let colspan:number = 5;
+    if (props.hideTable == true) {
+        columns = [dm.columns[0]];
+        colspan = 1;
+    }
+
     return (
       <Box sx={{position:"sticky",top:0,backgroundColor:"white"}}>
       <Table>
         <TableHead>
           <TableRow>
-                <GanttTableCell sx={{height:dm.h}} ></GanttTableCell>
+                <GanttTableCell sx={{height:dm.h}} align="right" colSpan={colspan}>{hideToggleTable()}</GanttTableCell>
           </TableRow>
           <TableRow>
-            {dm.columns.map((col)=>{
+            {columns.map((col)=>{
                 return (<GanttTableCell sx={{height:dm.h,width:col.width}} align={col.align} >
                 {col.name}
                 </GanttTableCell>);
@@ -864,10 +896,17 @@ function GppGanttTableHeader(props:GppGanttChartInternalProps) {
     );
 }
 
+type GppGanttTableBodyProps = {
+    dm: CGppGanttDataManager;
+    hideTable: boolean,
+    onClickTask?: (id:string)=>void,       // タスクをクリックしたときに呼ばれるオールバック
+    changeOpenClose?: (id:number,open:boolean)=>void     // オープン・クローズ
+}
+
 /**
  * ガントチャートのテーブル部分のボディー部
  */
-function GppGanttTableBody(props:GppGanttChartInternalProps) {
+function GppGanttTableBody(props:GppGanttTableBodyProps) {
     const {dm} = props;
 
     function getBgColor(row:IGppGanttData):string {
@@ -899,7 +938,13 @@ function GppGanttTableBody(props:GppGanttChartInternalProps) {
             // イベント伝搬をキャンセル
             event.stopPropagation();
         }}>{arrow}</IconButton>);
-    } 
+    }
+
+    // 表示・非表示で表示する列を変える
+    let columns = dm.columns;
+    if (props.hideTable == true) {
+        columns = [dm.columns[0]];
+    }
 
     return (
       <Table>
@@ -910,7 +955,7 @@ function GppGanttTableBody(props:GppGanttChartInternalProps) {
                 } else {
                   return (
                     <TableRow style={{background:getBgColor(row)}}>
-                    {dm.columns.map((col) => {
+                    {columns.map((col) => {
                         return (
                         <GanttTableCell sx={{height:dm.h-1,maxWidth:col.width,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} align={col.align} 
                                         onClick={(event) => {
@@ -1146,21 +1191,25 @@ type GppGanttChartInternalProps = {
     changeOpenClose?: (id:number,open:boolean)=>void     // オープン・クローズ
 }
 
-
 /**
  * Gppガントチャート
  */
 export function GppGanttChart(props:GppGanttChartProps) {
+    const [hideTable,setHideTable] = useState<boolean>(isMobile);
     const tableEl = useRef<HTMLDivElement>(null);
     const calendarEl = useRef<HTMLDivElement>(null);
 
     let dm = new CGppGanttDataManager(props.mode,props.config,props.columns,props.data,props.links);
     dm.setup();
-    let cal_width;
+    let cal_width = props.width;
+    let table_width = 400;
     if (dm.config.table_view == true){
-        cal_width = props.width-350;
-    } else {
-        cal_width = props.width;
+        if (hideTable == true) {
+            cal_width = props.width-50;
+            table_width = 50;
+        } else {
+            cal_width = props.width-350;
+        }
     }
 
     // スクロール連動
@@ -1185,10 +1234,10 @@ export function GppGanttChart(props:GppGanttChartProps) {
         <Stack direction={"column"} spacing={0.5}>
             <Stack direction={"row"} spacing={0.5}>
                 {(dm.config.table_view == true) ? ( 
-                <Box ref={tableEl} onScroll={()=>{handleScroll(true)}} sx={{width:400,overflowY:'auto',overflowX:"scroll",height:props.height}}>
+                <Box ref={tableEl} onScroll={()=>{handleScroll(true)}} sx={{width:table_width,overflowY:'auto',overflowX:"scroll",height:props.height}}>
                     <Stack direction={"column"} spacing={0}>
-                        <GppGanttTableHeader dm={dm}/>
-                        <GppGanttTableBody dm={dm} onClickTask={props.onClickTask} changeOpenClose={props.changeOpenClose}/>
+                        <GppGanttTableHeader dm={dm} hideTable={hideTable} changeHideTable={setHideTable} />
+                        <GppGanttTableBody dm={dm} hideTable={hideTable} onClickTask={props.onClickTask} changeOpenClose={props.changeOpenClose}/>
                     </Stack>
                 </Box>):(<></>)}
                 <Box ref={calendarEl} onScroll={()=>{handleScroll(false)}} sx={{width:cal_width ,overflow: 'auto',height:props.height}} >

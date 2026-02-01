@@ -40,13 +40,14 @@ export class CPlan {
     static type_options: IValueOptions[] = [
             {value:"normal",label:"",}, 
             {value:"milestone",label:"MS"},
-            {value:"fulltime",label:"休日稼働"}, 
+            {value:"important",label:"重要"},
         ];
     static worker_type_options: IValueOptions[] = [
             {value:"maanger",label:"管理者",}, 
             {value:"leader",label:"リーダ"}, 
             {value:'developer',label:"開発者"},
             {value:'tester',label:"テスタ"},
+            {value:'contractor',label:"委託先"},
             {value:'equipment',label:"設備",}
         ];
     static level_options: IValueOptions[] = [

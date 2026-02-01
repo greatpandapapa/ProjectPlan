@@ -120,9 +120,9 @@ export class CHolidayList extends CBaseList<CHoliday> {
     /**
      * start_dateとend_dateの日数差を計算する
      */
-    public getDuration(start_date:Date,end_date:Date,type:string):number {
+    public getDuration(start_date:Date,end_date:Date,fulltime:boolean):number {
         let days = Math.floor((end_date.getTime() - start_date.getTime()) / 86400000);
-        if (type == "fulltime") {
+        if (fulltime == true) {
             return days;
         } else {
             const holidaies:string[] = this.getDays();

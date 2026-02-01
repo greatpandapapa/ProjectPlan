@@ -35,6 +35,7 @@ export interface ITask extends IBaseListItem {
     ticket_no: string;
     link_type: string;
     link_id: null|number;
+    fulltime?: boolean;
     open?: boolean;
 }
 export interface IWorker extends IBaseListItem {
@@ -62,13 +63,6 @@ export interface DataJson {
     worker: IWorker[],
     holiday: IHoliday[]
 }
-
-/*
-declare module '*.json' {
-    const data: DataJson
-    export default data;
-}
-*/
 
 export interface ITaskRows extends ITask {
     no: number;
