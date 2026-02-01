@@ -3,7 +3,7 @@
 ## 概要
 - 工程表を作成するアプリ
 
-![gantt](./doc/img/pm_gantt.png)
+![gantt](./doc/img/pm_ganttchart.png)
 
 ## 機能
 - タスクを登録し、ガントチャートを表示する
