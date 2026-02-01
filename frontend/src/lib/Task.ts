@@ -980,7 +980,7 @@ export class CTask implements ITask {
      */
     public setDateNormal() {
         if (this.start_date_auto == "normal") {
-            this.end_date2 = this._getDateOfDuration(new Date(this.start_date),this.duration,"add1base");
+            this.end_date2 = this._getDateOfDuration(new Date(this.start_date),this.duration,"add1base",this.type);
             this.end_date = toDateString(this.end_date2);
         }
     }
@@ -991,7 +991,7 @@ export class CTask implements ITask {
     public setDatePre(pre_task:CTask) {
         if (this.start_date_auto == "pre") {
             if (pre_task.level == LEVEL.NORMAL) {
-                this.start_date2 = this._getDateOfDuration(pre_task.end_date2,1,"add");
+                this.start_date2 = this._getDateOfDuration(pre_task.end_date2,1,"add",this.type);
                 this.end_date2 =  this._getDateOfDuration(this.start_date2,this.duration,"add1base",this.type);
                 this.start_date = toDateString(this.start_date2);
                 this.end_date = toDateString(this.end_date2);
