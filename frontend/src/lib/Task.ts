@@ -331,6 +331,7 @@ export class CTaskList {
         if (idx != null) {
             this.task[idx].pre_id = new_id;
         }
+        this.plan.modified();
         return new_id;
     }
 
@@ -427,6 +428,8 @@ export class CTaskList {
             this.task[idx].update(data2);
         }
         this.task[idx].setDateStartEnd(this.plan.holidaies);
+
+        this.plan.modified();
     }
 
     /**
@@ -455,6 +458,7 @@ export class CTaskList {
                 this.task[idx].pre_id = pre_id;
             }
         }
+        this.plan.modified();
     }
 
     /**
@@ -491,6 +495,8 @@ export class CTaskList {
         }
 //        console.log("----after----");
 //        this._printID();
+
+        this.plan.modified();
     }
 
     private _printID() {

@@ -77,6 +77,7 @@ function PlanPanel() {
                     <TextField label="ファイル名" fullWidth size="small" value={name}
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         plan.name = event.target.value;
+                        plan.modified();
                         setName(plan.name);
                       }}/>
                 </Grid>
@@ -88,6 +89,7 @@ function PlanPanel() {
                       value={status} sx={{width:150}} size="small"
                       onChange={(event) => {
                             plan.status = event.target.value;
+                            plan.modified();
                             setStatus(plan.status);
                         }}>
                         {status_menuItems}
@@ -104,6 +106,7 @@ function PlanPanel() {
                     <TextField label="タイトル" fullWidth size="small" value={title}
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         plan.title = event.target.value;
+                        plan.modified();
                         setTitle(plan.title);
                       }}/>
                 </Grid>
@@ -111,6 +114,7 @@ function PlanPanel() {
                     <TextField label="説明" multiline rows={3} fullWidth size="small" value={purpose}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         plan.purpose = event.target.value;
+                        plan.modified();
                         setPurpose(plan.purpose);}}/>
                 </Grid>
                 <Grid size={12}>
@@ -123,6 +127,7 @@ function PlanPanel() {
                             plan.masterplan = event.target.value;
                             plan.resetMasterPlan();
                             plan.loadMasterPlan();
+                            plan.modified();
                             setMasterPlan(plan.masterplan);
                         }}>
                         {masterplan_menuItems}
@@ -133,6 +138,7 @@ function PlanPanel() {
                     <TextField label="チケットURL" fullWidth size="small" value={ticket_url}
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                         plan.ticket_url = event.target.value;
+                        plan.modified();
                         setTicketUrl(plan.ticket_url);
                       }}/>
                 </Grid>

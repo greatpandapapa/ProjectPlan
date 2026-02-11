@@ -3,6 +3,7 @@ import {
     IReference,
     IBaseListItem
 } from "./typings";
+import {CPlan} from "./Plan";
 
 /**
  * リストのアイテムのベースクラス
@@ -22,6 +23,7 @@ export abstract class CBaseListItem implements IBaseListItem {
  * listの型は子クラスで定義するため、ジェネリック型を利用する
  */
 export abstract class CBaseList<T extends CBaseListItem>  {
+    private plan: CPlan;
     protected list: T[] = [];
     protected max_id: number;
     protected latest_id: number;
@@ -31,9 +33,10 @@ export abstract class CBaseList<T extends CBaseListItem>  {
      * 
      * @param data JSONデータ
      */
-    constructor() {
+    constructor(plan:CPlan) {
         this.max_id = 0;
         this.latest_id = 0;
+        this.plan = plan;
     }
 
     /**
@@ -87,6 +90,7 @@ export abstract class CBaseList<T extends CBaseListItem>  {
      */
     public getNewData() {
         this._checkMaxLatestId();
+        this.plan.modified();
         return this._factoryObject({"id":this.max_id+1});
     }
 
@@ -106,6 +110,7 @@ export abstract class CBaseList<T extends CBaseListItem>  {
         } else {
             this.list[idx].update(data2);
         }
+        this.plan.modified();
     }
 
     /**
@@ -119,6 +124,7 @@ export abstract class CBaseList<T extends CBaseListItem>  {
             throw new Error("can't get destination by id:"+id);
         }
         this.list.splice(idx, 1);
+        this.plan.modified();
     }
 
     /**

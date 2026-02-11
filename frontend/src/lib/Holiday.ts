@@ -21,9 +21,9 @@ export class CHolidayList extends CBaseList<CHoliday> {
      * 
      * @param data JSONデータ
      */
-    constructor(data: DataJson) {
-        super();
-         for (let dt of data.holiday) {
+    constructor(plan:CPlan, data: DataJson) {
+        super(plan);
+        for (let dt of data.holiday) {
             this.list.push(this._factoryObject(dt));
         }
     }

@@ -2,10 +2,11 @@ import { isMobile } from "react-device-detect";
 //const isMobile = true;
 
 export const config = {
-    version: "1.0.9",
+    version: "1.1.0",
     isMobile: isMobile,
     icon_hight: isMobile ? "32px":"48px",
-    datagrid_rowHight: isMobile ? 25:35
+    datagrid_rowHight: isMobile ? 25:35,
+    fontsize: 12,
 } 
 
 // モバイル環境で文字を省略する場所で使う

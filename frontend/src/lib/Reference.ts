@@ -6,6 +6,7 @@ import {
     CBaseListItem,
     CBaseList
 } from "./BaseList";
+import {CPlan} from "./Plan";
 
 /**
  * 参考情報リスト
@@ -18,8 +19,8 @@ export class CReferenceList extends CBaseList<CReference> {
      * 
      * @param data JSONデータ
      */
-    constructor(data: DataJson) {
-        super();
+    constructor(plan:CPlan, data: DataJson) {
+        super(plan);
          for (let dt of data.reference) {
             this.list.push(this._factoryObject(dt));
         }

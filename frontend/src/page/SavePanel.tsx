@@ -54,11 +54,11 @@ function SavePanel() {
     <Grid container>
         <Typography>
             <Box>
-            {plan.old_version == true ? (
+            {plan.isOldVersion() ? ( 
                 <>旧バージョンが読み込まれているので保存できません</>
             ) : (
                 <Box sx={{ p: 2, display: 'flex',justifyContent: 'flex-start',verticalAlign:'center' }}>
-                    サーバに保存しますか？<Button variant="outlined" size="small" onClick={saveData} sx={{bgcolor: '#ffffff'}}>はい</Button>
+                    <Button variant="outlined" size="small" onClick={saveData} sx={{bgcolor: '#ffffff'}} disabled={!plan.isModified()}>サーバに保存</Button>
                     {saved == "success" && "保存しました"}
                     {saved == "error" && resp_mesg}
                 </Box>

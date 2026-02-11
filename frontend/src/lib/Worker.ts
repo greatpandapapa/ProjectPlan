@@ -13,7 +13,6 @@ import {CPlan} from "./Plan";
  * 作業者
  */
 export class CWorkerList extends CBaseList<CWorker> {
-    private plan: CPlan;
     list: CWorker[] = [];
 
     /**
@@ -22,11 +21,10 @@ export class CWorkerList extends CBaseList<CWorker> {
      * @param data JSONデータ
      */
     constructor(plan:CPlan, data: DataJson) {
-        super();
+        super(plan);
          for (let dt of data.worker) {
             this.list.push(this._factoryObject(dt));
         }
-        this.plan = plan;
     }
 
     /**

@@ -9,13 +9,14 @@ import { BrowserRouter,Routes,Route } from 'react-router-dom';
 import { isMobile } from "react-device-detect";
 import Load from './page/Load';
 import Main from './page/Main';
+import { config } from './lib/Config';
 
 dayjs.locale("ja_JP");
 
 function App() {
   const theme = createTheme({
     typography: {
-      fontSize: 14,
+      fontSize: config.fontsize,
     },
     spacing: 4,
     mixins: {

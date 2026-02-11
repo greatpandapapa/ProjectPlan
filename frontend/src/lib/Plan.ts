@@ -98,14 +98,16 @@ export class CPlan {
     // プライベート
     public tasks: CTaskList = new CTaskList(this,jsondata);
     public workers: CWorkerList = new CWorkerList(this,jsondata);
-    public references: CReferenceList = new CReferenceList(jsondata);
-    public holidaies: CHolidayList = new CHolidayList(jsondata);
+    public references: CReferenceList = new CReferenceList(this,jsondata);
+    public holidaies: CHolidayList = new CHolidayList(this,jsondata);
     // 集計情報
     public total_fee: {[index: string]: number} = {}
     // マスタープラン
     private _masterplan: null|CPlan = null;
     private _masterplan_options:IValueOptions[] = [];
-
+    // 更新ありフラグ
+    private modify:boolean = false;
+    
     /**
      * コンストラクタ
      * 
@@ -137,11 +139,13 @@ export class CPlan {
 
         this.tasks = new CTaskList(this,data);
         this.workers = new CWorkerList(this,data);
-        this.references = new CReferenceList(data);
-        this.holidaies = new CHolidayList(data);
+        this.references = new CReferenceList(this,data);
+        this.holidaies = new CHolidayList(this,data);
 
         // マスタープランオブジェクトの初期化
         this.resetMasterPlan();
+        // 更新なし状態にセット
+        this.unsetModified();
     }
 
     /**
@@ -151,6 +155,8 @@ export class CPlan {
         this.loadTemplateData();
         this.tasks.loadCSV(csv);
         this.name = filename;
+        // 更新なし状態にセット
+        this.unsetModified();
     }
 
     /**
@@ -171,14 +177,33 @@ export class CPlan {
 
         this.tasks = new CTaskList(this,data);
         this.workers = new CWorkerList(this,data);
-        this.references = new CReferenceList(data);
-        this.holidaies = new CHolidayList(data);
+        this.references = new CReferenceList(this,data);
+        this.holidaies = new CHolidayList(this,data);
         // マスタープランオブジェクトの初期化
         this.resetMasterPlan();
+        // 更新なし状態にセット
+        this.unsetModified();
+    }
+
+    // 湖心更新なしにリセット
+    public unsetModified():void {
+        this.modify = false;
+    }
+    // 更新あり状態にする
+    public modified():void {
+        this.modify = true;
+    }
+    // 更新状態を確認する
+    public isModified():boolean {
+        return this.modify;
+    }
+    // 旧バージョンを読み込んでいるか
+    public isOldVersion():boolean {
+        return this.old_version;
     }
 
     // マスタープランオブジェクトの初期化
-    public resetMasterPlan() {
+    public resetMasterPlan():void {
         this._masterplan = null;
     }
 
@@ -629,6 +654,7 @@ export class CPlan {
      */
     public incRev() {
         this.rev++;
+        this.unsetModified();
     }
 }
 
